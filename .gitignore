@@ -4,6 +4,8 @@ fig/
 log/
 data/
 .DS_Store
+*.swp
+*.history
 
 ### Default Python .gitignore
 
