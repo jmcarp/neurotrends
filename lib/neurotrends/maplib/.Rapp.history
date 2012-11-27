@@ -1,0 +1,755 @@
+librry(ggplot2)
+library(ggplot2)
+library(ggmap)
+library(Hmisc)
+chulon = -78.9#-83.73#
+chulat =  36#42.28#
+#
+rublon = -78.9#-83.71#
+rublat =  36#42.29#
+#
+beklon = -89.27#-81.01#-88.21#
+beklat =  48.42#46.49#40.11#
+#
+df = data.frame(#
+	lon=c(rep(chulon, 7), rep(rublon, 3), rep(beklon, 5)),#
+	lat=c(rep(chulat, 7), rep(rublat, 3), rep(beklat, 5)),#
+	pkg=c('spm', 'fsl', 'afni', 'spm', 'spm', 'fsl', 'fsl', 'spm', 'spm', 'spm', 'fsl', 'fsl', 'fsl', 'spm', 'afni')#
+)
+Libraries#
+library(geosphere)#
+library(ggmap)#
+library(Hmisc)#
+#
+########################
+## Utility functions ###
+########################
+#
+# Geographical distance matrix#
+geo.dist = function(lon, lat) {#
+	# Initialize#
+	mtx = matrix(nrow=length(lon), ncol=length(lon))#
+	# Calculate distances#
+	for (i in 1 : length(lon)) {#
+		ivec = c(lon[i], lat[i])#
+		for (j in 1 : i) {#
+			jvec = c(lon[j], lat[j])#
+			mtx[i, j] = distHaversine(ivec, jvec)#
+		}#
+	}#
+	# Return#
+	mtx#
+}#
+#
+# Geographic mean (modified from geosphere::geomean)#
+geomean.mod = function (xy, w = NULL) #
+{#
+    if (inherits(xy, "SpatialPolygons") | inherits(xy, "SpatialPoints")) {#
+        stopifnot(isLonLat(xy))#
+        xy <- coordinates(xy)#
+    }#
+    xy <- na.omit(xy)#
+    xy[, 1] <- xy[, 1] + 180#
+    xy <- xy * pi/180#
+    if (is.null(w)) {#
+        w <- 1#
+    }#
+    else if (length(w) != nrow(xy)) {#
+        stop("length of weights not correct. It should be: ", #
+            nrow(xy))#
+    }#
+    w <- w/sum(w)#
+    Sx <- mean(sin(xy[, 1]) * w)#
+    Cx <- mean(cos(xy[, 1]) * w)#
+    x <- atan2(Sx, Cx)#
+    x <- x%%(2 * pi) - pi#
+    Sy <- mean(sin(xy[, 2]) * w)#
+    Cy <- mean(cos(xy[, 2]) * w)#
+    y <- atan2(Sy, Cy)#
+    cbind(x, y) * 180/pi#
+}#
+#
+# Get gmap bounding box#
+gmap.bbox = function(gmap) {#
+	# Initialize#
+	bbox = c()#
+	# Get span#
+	bbox$lonspn = gmap$data$lon[c(1,2)]#
+	bbox$latspn = gmap$data$lat[c(1,3)]#
+	# Get range#
+	bbox$lonrng = diff(bbox$lonspn)#
+	bbox$latrng = diff(bbox$latspn)#
+	# Return#
+	bbox#
+}#
+#
+# Generate ggplot-style color palette#
+ggplotColours = function(n=6, h=c(0, 360) + 15) {#
+	if ((diff(h) %% 360) < 1) {#
+		h[2] = h[2] - 360 / n#
+	}#
+	hcl(h=seq(h[1], h[2], length=n), c=100, l=65)#
+}#
+#
+##
+group.coords = function(data, k=NULL, h=NULL) {#
+	# Get geo distance matrix#
+	dist = geo.dist(data$lon, data$lat)#
+	if (k==1) {#
+		# One cluster: do nothing#
+		groups = rep(1, length(data$lon))#
+	} else {#
+		# Get clusters#
+		tree = hclust(as.dist(dist), method='ward')#
+		groups = cutree(tree, k, h)#
+	}#
+	cens = c()#
+	for (groupidx in 1 : max(groups)) {#
+		groupdata = data[groups==groupidx,]#
+		geodata = groupdata[c('lon', 'lat')]#
+		# Number of unique coordinates#
+		ucoord = length(unique(geodata))#
+		# Number of unique longitudes#
+		ulon = length(unique(groupdata$lon))#
+		# Number of unique latitudes#
+		ulat = length(unique(groupdata$lat))#
+		if (ucoord < 3 | ulon == 1 | ulat == 1) {#
+			cen = geomean.mod(geodata)#
+			print(cen)#
+		} else {#
+			cen = centroid(cbind(groupdata$lon, groupdata$lat))#
+			print(cen)#
+		}#
+		cens = rbind(cens, cen)#
+	}#
+	list(groups=groups, cens=cens)#
+}#
+#
+#########################
+## Plotting functions ###
+#########################
+#
+# Default options for pie grobs#
+pie.opts = opts(#
+	panel.background=theme_rect(fill='transparent', colour=NA),#
+	plot.background=theme_rect(fill='transparent', colour=NA),#
+	legend.position='none',#
+	panel.grid.minor=theme_blank(),#
+	panel.grid.major=theme_blank(),#
+	axis.ticks=theme_blank(),#
+	axis.text.x=theme_blank(),#
+	axis.text.y=theme_blank(),#
+	panel.border=theme_blank()#
+)#
+#
+# Get pie chart grob#
+pie.grob = function(data, colname, cols=NULL) {#
+	data$fill = factor(data[,colname])#
+	plotobj = ggplot(data, aes(x='', fill=fill)) +#
+		geom_bar(width=1)#
+	if (!is.null(cols)) {#
+		plotobj = plotobj + scale_fill_manual(values=cols)#
+	}#
+	plotobj = plotobj +#
+		coord_polar(theta='y') +#
+		pie.opts + xlab('') + ylab('')#
+	grob = ggplotGrob(plotobj)#
+	grob#
+}#
+#
+# #
+piemap = function(gmap, cgrob, cx, cy, cd, addpoints=FALSE) {#
+	# Get offsets#
+	bbox = gmap.bbox(gmap)#
+	xoff = -0.0195 * bbox$lonrng#
+	yoff = -0.0195 * bbox$latrng#
+	# Initialize gmap#
+	ggobj = gmap + #
+		opts(legend.position='none')#
+	# Add pie grobs#
+	for (gidx in 1 : length(cgrob)) {#
+		# Hack: Center vertically in Mercator coordinates#
+		ycen.geo = cy[gidx]#
+		ybot.geo = cy[gidx] - (cd[gidx] * bbox$latrng) * 1.25#
+		ycen.xy = mercator(c(0, ycen.geo))[2]#
+		ybot.xy = mercator(c(0, ybot.geo))[2]#
+		ytop.xy = ycen.xy + (ycen.xy - ybot.xy)#
+		ytop.geo = mercator(c(0, ytop.xy), inverse=TRUE)[2]#
+		# Add pie grob#
+		ggobj = ggobj + inset(#
+			cgrob[[gidx]], #
+			xmin = cx[gidx] - (cd[gidx] * bbox$lonrng) + xoff, #
+			xmax = cx[gidx] + (cd[gidx] * bbox$lonrng) + xoff, #
+			ymin = ybot.geo + yoff, #
+			ymax = ytop.geo + yoff#
+		)#
+	}#
+	# Add points#
+	if (addpoints) {#
+		ggobj = ggobj +#
+			geom_point(aes(x=cx, y=cy, size=3), data=data.frame(cx=cx, cy=cy))#
+	}#
+	ggobj#
+}#
+#
+##
+plot.groups = function(data, gmap, dv='pkg', k=NULL, h=NULL, maxsize=NULL) {#
+	# Trim out-of-range points#
+	bbox = gmap.bbox(gmap)#
+	incidx = data$lon >= bbox$lonspn[1] & data$lon <= bbox$lonspn[2] &#
+		data$lat >= bbox$latspn[1] & data$lat <= bbox$latspn[2]#
+	incdata = data[incidx,]#
+	# Re-order factor by frequency#
+	incdata[,dv] = factor(incdata[,dv])#
+	dvtab = table(incdata[,dv])#
+	dvlev = names(sort(dvtab, decreasing=TRUE))#
+	incdata[,dv] = factor(incdata[,dv], levels=dvlev)#
+	nlev = length(dvlev)#
+	# Get color palette#
+	cols = ggplotColours(nlev)#
+	# Get geo centroids#
+	groupinfo = group.coords(incdata, k, h)#
+	groups = groupinfo$groups#
+	cens = groupinfo$cens#
+	ngroup = max(groups)#
+	# Initialize#
+	groblist = list()#
+	sizes = c()#
+	# Make pie grobs#
+	for (groupidx in 1 : max(groups)) {#
+		# Get data for geo group#
+		groupdata = data[groups==groupidx,]#
+		# Get colors#
+		grobcols = cols[table(groupdata[,dv]) > 0]#
+		# Add pie grob#
+		groblist = append(groblist, list(pie.grob(groupdata, 'pkg', grobcols)))#
+		# Add grob size#
+		sizes = c(sizes, 0.1 * sqrt(sum(groups==groupidx) / pi))#
+	}#
+	# Scale plot sizes#
+	if (!is.null(maxsize)) {#
+		sizes = sizes / max(sizes) * maxsize#
+	}#
+	# Plot#
+	piemap(gmap, groblist, cens[,1], cens[,2], sizes)#
+}
+df
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10))))
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10)))
+library(geosphere)
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10)))
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10)), k=2)
+Libraries#
+library(geosphere)#
+library(ggmap)#
+library(Hmisc)#
+#
+########################
+## Utility functions ###
+########################
+#
+# Geographical distance matrix#
+geo.dist = function(lon, lat) {#
+	# Initialize#
+	mtx = matrix(nrow=length(lon), ncol=length(lon))#
+	# Calculate distances#
+	for (i in 1 : length(lon)) {#
+		ivec = c(lon[i], lat[i])#
+		for (j in 1 : i) {#
+			jvec = c(lon[j], lat[j])#
+			mtx[i, j] = distHaversine(ivec, jvec)#
+		}#
+	}#
+	# Return#
+	mtx#
+}#
+#
+# Geographic mean (modified from geosphere::geomean)#
+geomean.mod = function (xy, w = NULL) #
+{#
+    if (inherits(xy, "SpatialPolygons") | inherits(xy, "SpatialPoints")) {#
+        stopifnot(isLonLat(xy))#
+        xy <- coordinates(xy)#
+    }#
+    xy <- na.omit(xy)#
+    xy[, 1] <- xy[, 1] + 180#
+    xy <- xy * pi/180#
+    if (is.null(w)) {#
+        w <- 1#
+    }#
+    else if (length(w) != nrow(xy)) {#
+        stop("length of weights not correct. It should be: ", #
+            nrow(xy))#
+    }#
+    w <- w/sum(w)#
+    Sx <- mean(sin(xy[, 1]) * w)#
+    Cx <- mean(cos(xy[, 1]) * w)#
+    x <- atan2(Sx, Cx)#
+    x <- x%%(2 * pi) - pi#
+    Sy <- mean(sin(xy[, 2]) * w)#
+    Cy <- mean(cos(xy[, 2]) * w)#
+    y <- atan2(Sy, Cy)#
+    cbind(x, y) * 180/pi#
+}#
+#
+# Get gmap bounding box#
+gmap.bbox = function(gmap) {#
+	# Initialize#
+	bbox = c()#
+	# Get span#
+	bbox$lonspn = gmap$data$lon[c(1,2)]#
+	bbox$latspn = gmap$data$lat[c(1,3)]#
+	# Get range#
+	bbox$lonrng = diff(bbox$lonspn)#
+	bbox$latrng = diff(bbox$latspn)#
+	# Return#
+	bbox#
+}#
+#
+# Generate ggplot-style color palette#
+ggplotColours = function(n=6, h=c(0, 360) + 15) {#
+	if ((diff(h) %% 360) < 1) {#
+		h[2] = h[2] - 360 / n#
+	}#
+	hcl(h=seq(h[1], h[2], length=n), c=100, l=65)#
+}#
+#
+##
+group.coords = function(data, k=NULL, h=NULL) {#
+	# Get geo distance matrix#
+	dist = geo.dist(data$lon, data$lat)#
+	if (k==1) {#
+		# One cluster: do nothing#
+		groups = rep(1, length(data$lon))#
+	} else {#
+		# Get clusters#
+		tree = hclust(as.dist(dist), method='ward')#
+		groups = cutree(tree, k, h)#
+	}#
+	cens = c()#
+	for (groupidx in 1 : max(groups)) {#
+		groupdata = data[groups==groupidx,]#
+		geodata = groupdata[c('lon', 'lat')]#
+		# Number of unique coordinates#
+		ucoord = length(unique(geodata))#
+		# Number of unique longitudes#
+		ulon = length(unique(groupdata$lon))#
+		# Number of unique latitudes#
+		ulat = length(unique(groupdata$lat))#
+		if (ucoord < 3 | ulon == 1 | ulat == 1) {#
+			cen = geomean.mod(geodata)#
+			print(cen)#
+		} else {#
+			cen = centroid(cbind(groupdata$lon, groupdata$lat))#
+			print(cen)#
+		}#
+		cens = rbind(cens, cen)#
+	}#
+	list(groups=groups, cens=cens)#
+}#
+#
+#########################
+## Plotting functions ###
+#########################
+#
+# Default options for pie grobs#
+pie.opts = opts(#
+	panel.background=theme_rect(fill='transparent', colour=NA),#
+	plot.background=theme_rect(fill='transparent', colour=NA),#
+	legend.position='none',#
+	panel.grid.minor=theme_blank(),#
+	panel.grid.major=theme_blank(),#
+	axis.ticks=theme_blank(),#
+	axis.text.x=theme_blank(),#
+	axis.text.y=theme_blank(),#
+	panel.border=theme_blank()#
+)#
+#
+# Get pie chart grob#
+pie.grob = function(data, colname, cols=NULL) {#
+	data$fill = factor(data[,colname])#
+	plotobj = ggplot(data, aes(x='', fill=fill)) +#
+		geom_bar(width=1)#
+	if (!is.null(cols)) {#
+		plotobj = plotobj + scale_fill_manual(values=cols)#
+	}#
+	plotobj = plotobj +#
+		coord_polar(theta='y') +#
+		pie.opts + xlab('') + ylab('')#
+	grob = ggplotGrob(plotobj)#
+	grob#
+}#
+#
+# #
+piemap = function(gmap, cgrob, cx, cy, cd, addpoints=FALSE) {#
+	# Get offsets#
+	bbox = gmap.bbox(gmap)#
+	xoff = -0.0195 * bbox$lonrng#
+	yoff = -0.0195 * bbox$latrng#
+	# Initialize gmap#
+	ggobj = gmap + #
+		opts(legend.position='none')#
+	# Add pie grobs#
+	for (gidx in 1 : length(cgrob)) {#
+		# Hack: Center vertically in Mercator coordinates#
+		ycen.geo = cy[gidx]#
+		ybot.geo = cy[gidx] - (cd[gidx] * bbox$latrng) * 1.25#
+		ycen.xy = mercator(c(0, ycen.geo))[2]#
+		ybot.xy = mercator(c(0, ybot.geo))[2]#
+		ytop.xy = ycen.xy + (ycen.xy - ybot.xy)#
+		ytop.geo = mercator(c(0, ytop.xy), inverse=TRUE)[2]#
+		# Add pie grob#
+		ggobj = ggobj + inset(#
+			cgrob[[gidx]], #
+			xmin = cx[gidx] - (cd[gidx] * bbox$lonrng) + xoff, #
+			xmax = cx[gidx] + (cd[gidx] * bbox$lonrng) + xoff, #
+			ymin = ybot.geo + yoff, #
+			ymax = ytop.geo + yoff#
+		)#
+	}#
+	# Add points#
+	if (addpoints) {#
+		ggobj = ggobj +#
+			geom_point(aes(x=cx, y=cy, size=3), data=data.frame(cx=cx, cy=cy))#
+	}#
+	ggobj#
+}#
+#
+##
+plot.groups = function(data, gmap, dv='pkg', k=NULL, h=NULL, maxsize=NULL) {#
+	# Trim out-of-range points#
+	bbox = gmap.bbox(gmap)#
+	incidx = data$lon >= bbox$lonspn[1] & data$lon <= bbox$lonspn[2] &#
+		data$lat >= bbox$latspn[1] & data$lat <= bbox$latspn[2]#
+	incdata = data[incidx,]#
+	# Re-order factor by frequency#
+	incdata[,dv] = factor(incdata[,dv])#
+	dvtab = table(incdata[,dv])#
+	dvlev = names(sort(dvtab, decreasing=TRUE))#
+	incdata[,dv] = factor(incdata[,dv], levels=dvlev)#
+	nlev = length(dvlev)#
+	# Get color palette#
+	cols = ggplotColours(nlev)#
+	# Get geo centroids#
+	groupinfo = group.coords(incdata, k, h)#
+	groups = groupinfo$groups#
+	cens = groupinfo$cens#
+	ngroup = max(groups)#
+	# Initialize#
+	groblist = list()#
+	sizes = c()#
+	# Make pie grobs#
+	for (groupidx in 1 : max(groups)) {#
+		# Get data for geo group#
+		groupdata = data[groups==groupidx,]#
+		# Get colors#
+		grobcols = cols[table(groupdata[,dv]) > 0]#
+		# Add pie grob#
+		groblist = append(groblist, list(pie.grob(groupdata, 'pkg', grobcols)))#
+		# Add grob size#
+		sizes = c(sizes, 0.1 * sqrt(sum(groups==groupidx) / pi))#
+	}#
+	# Scale plot sizes#
+	if (!is.null(maxsize)) {#
+		sizes = sizes / max(sizes) * maxsize#
+	}#
+	# Plot#
+	piemap(gmap, groblist, cens[,1], cens[,2], sizes)#
+}
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10)), k=2)
+df
+geo.dist(df$lon, df$lat)
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10)), k=2)
+Libraries#
+library(geosphere)#
+library(ggmap)#
+library(Hmisc)#
+#
+########################
+## Utility functions ###
+########################
+#
+# Geographical distance matrix#
+geo.dist = function(lon, lat) {#
+	# Initialize#
+	mtx = matrix(nrow=length(lon), ncol=length(lon))#
+	print(lon); print(lat)#
+	# Calculate distances#
+	for (i in 1 : length(lon)) {#
+		ivec = c(lon[i], lat[i])#
+		for (j in 1 : i) {#
+			jvec = c(lon[j], lat[j])#
+			mtx[i, j] = distHaversine(ivec, jvec)#
+		}#
+	}#
+	# Return#
+	mtx#
+}#
+#
+# Geographic mean (modified from geosphere::geomean)#
+geomean.mod = function (xy, w = NULL) #
+{#
+    if (inherits(xy, "SpatialPolygons") | inherits(xy, "SpatialPoints")) {#
+        stopifnot(isLonLat(xy))#
+        xy <- coordinates(xy)#
+    }#
+    xy <- na.omit(xy)#
+    xy[, 1] <- xy[, 1] + 180#
+    xy <- xy * pi/180#
+    if (is.null(w)) {#
+        w <- 1#
+    }#
+    else if (length(w) != nrow(xy)) {#
+        stop("length of weights not correct. It should be: ", #
+            nrow(xy))#
+    }#
+    w <- w/sum(w)#
+    Sx <- mean(sin(xy[, 1]) * w)#
+    Cx <- mean(cos(xy[, 1]) * w)#
+    x <- atan2(Sx, Cx)#
+    x <- x%%(2 * pi) - pi#
+    Sy <- mean(sin(xy[, 2]) * w)#
+    Cy <- mean(cos(xy[, 2]) * w)#
+    y <- atan2(Sy, Cy)#
+    cbind(x, y) * 180/pi#
+}#
+#
+# Get gmap bounding box#
+gmap.bbox = function(gmap) {#
+	# Initialize#
+	bbox = c()#
+	# Get span#
+	bbox$lonspn = gmap$data$lon[c(1,2)]#
+	bbox$latspn = gmap$data$lat[c(1,3)]#
+	# Get range#
+	bbox$lonrng = diff(bbox$lonspn)#
+	bbox$latrng = diff(bbox$latspn)#
+	# Return#
+	bbox#
+}#
+#
+# Generate ggplot-style color palette#
+ggplotColours = function(n=6, h=c(0, 360) + 15) {#
+	if ((diff(h) %% 360) < 1) {#
+		h[2] = h[2] - 360 / n#
+	}#
+	hcl(h=seq(h[1], h[2], length=n), c=100, l=65)#
+}#
+#
+##
+group.coords = function(data, k=NULL, h=NULL) {#
+	# Get geo distance matrix#
+	dist = geo.dist(data$lon, data$lat)#
+	if (k==1) {#
+		# One cluster: do nothing#
+		groups = rep(1, length(data$lon))#
+	} else {#
+		# Get clusters#
+		tree = hclust(as.dist(dist), method='ward')#
+		groups = cutree(tree, k, h)#
+	}#
+	cens = c()#
+	for (groupidx in 1 : max(groups)) {#
+		groupdata = data[groups==groupidx,]#
+		geodata = groupdata[c('lon', 'lat')]#
+		# Number of unique coordinates#
+		ucoord = length(unique(geodata))#
+		# Number of unique longitudes#
+		ulon = length(unique(groupdata$lon))#
+		# Number of unique latitudes#
+		ulat = length(unique(groupdata$lat))#
+		if (ucoord < 3 | ulon == 1 | ulat == 1) {#
+			cen = geomean.mod(geodata)#
+			print(cen)#
+		} else {#
+			cen = centroid(cbind(groupdata$lon, groupdata$lat))#
+			print(cen)#
+		}#
+		cens = rbind(cens, cen)#
+	}#
+	list(groups=groups, cens=cens)#
+}#
+#
+#########################
+## Plotting functions ###
+#########################
+#
+# Default options for pie grobs#
+pie.opts = opts(#
+	panel.background=theme_rect(fill='transparent', colour=NA),#
+	plot.background=theme_rect(fill='transparent', colour=NA),#
+	legend.position='none',#
+	panel.grid.minor=theme_blank(),#
+	panel.grid.major=theme_blank(),#
+	axis.ticks=theme_blank(),#
+	axis.text.x=theme_blank(),#
+	axis.text.y=theme_blank(),#
+	panel.border=theme_blank()#
+)#
+#
+# Get pie chart grob#
+pie.grob = function(data, colname, cols=NULL) {#
+	data$fill = factor(data[,colname])#
+	plotobj = ggplot(data, aes(x='', fill=fill)) +#
+		geom_bar(width=1)#
+	if (!is.null(cols)) {#
+		plotobj = plotobj + scale_fill_manual(values=cols)#
+	}#
+	plotobj = plotobj +#
+		coord_polar(theta='y') +#
+		pie.opts + xlab('') + ylab('')#
+	grob = ggplotGrob(plotobj)#
+	grob#
+}#
+#
+# #
+piemap = function(gmap, cgrob, cx, cy, cd, addpoints=FALSE) {#
+	# Get offsets#
+	bbox = gmap.bbox(gmap)#
+	xoff = -0.0195 * bbox$lonrng#
+	yoff = -0.0195 * bbox$latrng#
+	# Initialize gmap#
+	ggobj = gmap + #
+		opts(legend.position='none')#
+	# Add pie grobs#
+	for (gidx in 1 : length(cgrob)) {#
+		# Hack: Center vertically in Mercator coordinates#
+		ycen.geo = cy[gidx]#
+		ybot.geo = cy[gidx] - (cd[gidx] * bbox$latrng) * 1.25#
+		ycen.xy = mercator(c(0, ycen.geo))[2]#
+		ybot.xy = mercator(c(0, ybot.geo))[2]#
+		ytop.xy = ycen.xy + (ycen.xy - ybot.xy)#
+		ytop.geo = mercator(c(0, ytop.xy), inverse=TRUE)[2]#
+		# Add pie grob#
+		ggobj = ggobj + inset(#
+			cgrob[[gidx]], #
+			xmin = cx[gidx] - (cd[gidx] * bbox$lonrng) + xoff, #
+			xmax = cx[gidx] + (cd[gidx] * bbox$lonrng) + xoff, #
+			ymin = ybot.geo + yoff, #
+			ymax = ytop.geo + yoff#
+		)#
+	}#
+	# Add points#
+	if (addpoints) {#
+		ggobj = ggobj +#
+			geom_point(aes(x=cx, y=cy, size=3), data=data.frame(cx=cx, cy=cy))#
+	}#
+	ggobj#
+}#
+#
+##
+plot.groups = function(data, gmap, dv='pkg', k=NULL, h=NULL, maxsize=NULL) {#
+	# Trim out-of-range points#
+	bbox = gmap.bbox(gmap)#
+	incidx = data$lon >= bbox$lonspn[1] & data$lon <= bbox$lonspn[2] &#
+		data$lat >= bbox$latspn[1] & data$lat <= bbox$latspn[2]#
+	incdata = data[incidx,]#
+	# Re-order factor by frequency#
+	incdata[,dv] = factor(incdata[,dv])#
+	dvtab = table(incdata[,dv])#
+	dvlev = names(sort(dvtab, decreasing=TRUE))#
+	incdata[,dv] = factor(incdata[,dv], levels=dvlev)#
+	nlev = length(dvlev)#
+	# Get color palette#
+	cols = ggplotColours(nlev)#
+	# Get geo centroids#
+	groupinfo = group.coords(incdata, k, h)#
+	groups = groupinfo$groups#
+	cens = groupinfo$cens#
+	ngroup = max(groups)#
+	# Initialize#
+	groblist = list()#
+	sizes = c()#
+	# Make pie grobs#
+	for (groupidx in 1 : max(groups)) {#
+		# Get data for geo group#
+		groupdata = data[groups==groupidx,]#
+		# Get colors#
+		grobcols = cols[table(groupdata[,dv]) > 0]#
+		# Add pie grob#
+		groblist = append(groblist, list(pie.grob(groupdata, 'pkg', grobcols)))#
+		# Add grob size#
+		sizes = c(sizes, 0.1 * sqrt(sum(groups==groupidx) / pi))#
+	}#
+	# Scale plot sizes#
+	if (!is.null(maxsize)) {#
+		sizes = sizes / max(sizes) * maxsize#
+	}#
+	# Plot#
+	piemap(gmap, groblist, cens[,1], cens[,2], sizes)#
+}
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=10)), k=2)
+df
+plot.groups(df, ggmap(get_map(location='ann arbor', zoom=5)), k=2)
+df
+rep(df, 5)
+disHaersie
+distaversine
+distversine
+distHaversine
+distHaversine(c(0, 0), c(100, 100))
+distHaversine(c(0, 0), c(30, 30))
+library(fields)
+print('hi', c)
+library(plotrix)
+sappl
+library(gridExtra)
+sapp
+sapply
+g_legend
+g_legend = function(a.gplot) {#
+  tmp = ggplot_gtable(ggplot_build(a.gplot))#
+  leg = which(sapply(tmp$grobs, function(x) x$name) == "guide-box")#
+  legend = tmp$grobs[[leg]]#
+  return(legend)#
+}
+library(ggmap)
+map = get_map(location='ann arbor, mi', zoom=6)
+map = ggmap(map)
+ggplot
+?ggplot
+update.packages(ak=FALSE)
+update.packages(ask=FALSE)
+library(ggplot2)
+library(ggplot)
+setwd('~/Dropbox/projects/fmri-software/scripts/maplib/')
+source('maptools.R')
+chulon = -78.9#-83.73#
+chulat =  36#42.28#
+#
+rublon = -78.9#-83.71#
+rublat =  36#42.29#
+#
+beklon = -89.27#-81.01#-88.21#
+beklat =  48.42#46.49#40.11#
+#
+df = data.frame(#
+	lon=c(rep(chulon, 7), rep(rublon, 3), rep(beklon, 5)),#
+	lat=c(rep(chulat, 7), rep(rublat, 3), rep(beklat, 5)),#
+	pkg=c('spm', 'fsl', 'afni', 'spm', 'spm', 'fsl', 'fsl', 'spm', 'spm', 'spm', 'fsl', 'fsl', 'fsl', 'spm', 'afni')#
+)
+df
+m = get_map('ann arbor, mi', zoom=5)
+ggmap(m)
+g = ggmap(m)
+plot.groups(df, g, k=3)
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+source('maptools.R')
+plot.groups(df, g, k=3)
+install.packages('~/Downloads/ggplot2_0.9.1.tar.gz', repos=NULL, type='source')
+install.packages('~/Downloads/ggmap_2.1.tar.gz', repos=NULL, type='source')
