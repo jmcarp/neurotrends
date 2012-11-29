@@ -137,7 +137,7 @@ def artverify(art, html='', pdf=''):
   # Load HTML
   if not html:
     html = loadhtml(art, overwrite=True)#, raw=True)
-  #return abswords, html
+  
   # Load PDF
   if not pdf:
     pdf = loadpdf(art)
@@ -162,19 +162,6 @@ def artverify(art, html='', pdf=''):
 
   # Return
   return htmlprop, pdfprop
-
-def checkarts(arts):
-
-  htmllist = []
-  pdflist = []
-
-  for artidx in range(arts.count()):
-    print 'Working on article %d...' % (artidx + 1)
-    htmlprop, pdfprop = artverify(arts[artidx])
-    htmllist.append(htmlprop)
-    pdflist.append(pdfprop)
-
-  return htmllist, pdflist
 
 def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
   
