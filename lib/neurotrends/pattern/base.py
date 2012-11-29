@@ -151,7 +151,7 @@ class Rule():
       return [(False, '')]
     if self.regex:
       if self.arbit:
-        return flexsearch(self.regex, txt, arbit=True)
+        return flexsearch(self.regex, txt, fun=re.findall)
       result = flexsearch(self.regex, txt)
       if result:
         context = getcontext(match=result, txt=txt)

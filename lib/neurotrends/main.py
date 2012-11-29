@@ -1,4 +1,4 @@
-# Import modules
+# Import built-in modules
 import os
 import sys
 import shelve
@@ -6,71 +6,119 @@ import smtplib
 from email.mime.text import MIMEText
 
 # Import project modules
-#from artscrape import *
-#from pubsearch import *
 from download.pubsearch import *
 from download.artscrape import *
-#from acrobatch import *
 from acrobatch.acrobatch import *
 from trendpath import *
 from tagxtract import *
 from logger import *
 
+## Set up database
+#session = getdb()
+
+# Password files
 userfile = '/Users/jmcarp/private/ump'
 mailfile = '/Users/jmcarp/private/gmp'
 
-def argh():
+def getartpath(art, attr, base):
   
-  br = getbr()
-  umlogin(br, userfile=userfile)
+  if not hasattr(art, attr):
+    return
 
-  arts = session.query(Article)\
-    .filter(Article.jtitle.like('%bmc%'))
+  path = '%s/%s' % (base, getattr(art, attr))
+  if os.path.exists(path):
+    return path
+
+pathmap = {
+  'htmlfile' : htmldir,
+  'chtmlfile' : chtmldir,
+  'pdfrawfile' : pdfdir,
+  'pdftxtfile' : pdftxtdir,
+}
+
+def pmidset(op):
+  """
+  Do set operations on PMIDs.
+  Args:
+    op (str):
+      extra: return PMIDs in database but not in query
+      missing: return PMIDs in query but not in database
+  """
+
+  # Get query PMIDs
+  pmrecs = artsearch(query)
+  pmids = [str(rec['pmid']) for rec in pmrecs]
+
+  # Get article PMIDs
+  arts = session.query(Article.pmid)
+  artids = [pmid[0] for pmid in arts]
+
+  if op == 'extra':
+    return list(set(artids) - set(pmids))
+  if op == 'missing':
+    return list(set(pmids) - set(artids))
+
+def prune(commit_interval=50):
+  """
+  Delete Article entries and associated files for articles
+  not in the current PubMed query.
+  Args:
+    commit_interval (int): how often to commit changes
+  """
   
-  print 'Found %d articles...' % (arts.count())
+  badids = pmidset('extra')
+  print 'Pruning %d extra articles...' % (len(badids))
+  
+  # Delete bad articles
+  for idx in range(len(badids)):
+    badid = badids[idx]
+    art = toart(badid)
+    for filetype in pathmap:
+      filepath = getartpath(art, filetype, pathmap[filetype])
+      if filepath:
+        os.remove(filepath)
+      session.delete(art)
+    # Save changes
+    if idx and idx % commit_interval == 0:
+      session.commit()
 
-  for art in arts:
+  # Save changes
+  session.commit()
 
-    artdump(art, br, overwrite=True)
-    artparse(art, overwrite=True)
-
-def newarts(src):
-
-  # Get PubMed IDs of stored articles
-  pmids = [int(pmid[0]) for pmid in session.query(Article.pmid)]
-
-  # Search for articles
-  arts = artsearch(src)
-
-  # Exclude stored articles
-  arts = [art for art in arts if art['pmid'] not in pmids]
-
-  # Return
-  return arts
-
-def update(arts=[], overwrite=True):
+def update(pmids=[], ndelay=None, overwrite=True):
+  """
+  Add articles to database. Get article info, location, 
+  files, and meta-data.
+  Args:
+    pmids (list, optional): PubMed IDs of articles to add.
+      If empty, add all missing articles
+    ndelay (int/None): If len(pmids) > ndelay, add delay
+      between articles
+    overwrite (bool): Overwrite article info
+  """
   
   # Set up browser
   br = getbr()
   umlogin(br, userfile=userfile)
 
   # Get new articles
-  if not arts:
-    arts = newarts(query)
+  if not pmids:
+    pmids = pmidset('missing')#newarts(query)
 
   # Get Google Maps delay
-  narts = len(arts)
-  delay = narts > 500
+  narts = len(pmids)
+  delay = ndelay is not None and narts > ndelay
 
   # Loop over articles
-  for artidx in range(len(arts)):
+  for artidx in range(narts):
     
-    art = arts[artidx]
+    pmid = pmids[artidx]
+    artdict = {'pmid' : pmid}
     print 'Working on article %d of %d, PMID %s...' % \
-      (artidx + 1, len(arts), art['pmid'])
+      (artidx + 1, narts, pmid)
     
     # Create article object
-    artobj = buildart(art)
+    artobj = buildart(artdict)
 
     # Get place information
     addplace(artobj, delay=delay)
@@ -84,6 +132,7 @@ def update(arts=[], overwrite=True):
     # Parse article
     parse = artparse(artobj, overwrite=overwrite)
 
+# TODO: is this function still needed?
 def filecheck():
   
   arts = session.query(Article).order_by(Article.pmid).all()
@@ -134,62 +183,67 @@ def batchdump(overwrite=False):
     ct += 1
 
 def artdump(art, br, overwrite=False):
+  """
+  Download HTML and PDF documents for an article.
+  """
+  
+  # Get article object
+  art = toart(art)
 
-    art = toart(art)
-
-    # 
-    htmlfile = '%s/html/%s.html' % (dumpdir, art.pmid)
-    chtmlfile = '%s/chtml/%s.shelf' % (dumpdir, art.pmid)
-    pdfrawfile = '%s/pdf/%s.pdf' % (dumpdir, art.pmid)
-    
-    # Return if article complete
-    if \
-        os.path.exists(htmlfile) \
-        and os.path.exists(pdfrawfile) \
-        and not overwrite:
-      art.htmlfile = os.path.split(htmlfile)[-1]
-      art.pdfrawfile = os.path.split(pdfrawfile)[-1]
-      print 'Download already complete'
-      session.commit()
-      return
-
-    # Return if PDF complete and HTML terminally unavailable
-    if \
-        os.path.exists(pdfrawfile) \
-        and art.scrapestatus \
-        and re.search('no html full text', art.scrapestatus) \
-        and not overwrite:
-      art.htmlfile = None
-      art.pdfrawfile = os.path.split(pdfrawfile)[-1]
-      print 'Download already complete; HTML not available'
-      session.commit()
-      return
-    
-    # Clear fields
-    art.url = None
-    art.htmlfile = None
-    art.pdfrawfile = None
-    art.pdfocr = None
-    art.pdfdecrypt = None
-    art.pdfdmethod = None
-    art.htmlval = None
-    art.pdfval = None
-
-    try:
-      status, puburl, outhtml, outrawpdf = pmid2file(
-        art.pmid, br, outhtml=htmlfile, outpdf=pdfrawfile, doi=art.doi
-      )
-      art.scrapestatus = status
-      art.url = puburl
-      if outhtml:
-        art.htmlfile = os.path.split(outhtml)[-1]
-      if outrawpdf:
-        art.pdfrawfile = os.path.split(outrawpdf)[-1]
-    except Exception as exc:
-      print exc
-      art.scrapestatus = exc.message
-
+  # 
+  htmlfile = '%s/html/%s.html' % (dumpdir, art.pmid)
+  chtmlfile = '%s/chtml/%s.shelf' % (dumpdir, art.pmid)
+  pdfrawfile = '%s/pdf/%s.pdf' % (dumpdir, art.pmid)
+  
+  # Return if article complete
+  if \
+      os.path.exists(htmlfile) \
+      and os.path.exists(pdfrawfile) \
+      and not overwrite:
+    art.htmlfile = os.path.split(htmlfile)[-1]
+    art.pdfrawfile = os.path.split(pdfrawfile)[-1]
+    print 'Download already complete'
     session.commit()
+    return
+
+  # Return if PDF complete and HTML terminally unavailable
+  if \
+      os.path.exists(pdfrawfile) \
+      and art.scrapestatus \
+      and re.search('no html full text', art.scrapestatus) \
+      and not overwrite:
+    art.htmlfile = None
+    art.pdfrawfile = os.path.split(pdfrawfile)[-1]
+    print 'Download already complete; HTML not available'
+    session.commit()
+    return
+    
+  # Clear fields
+  art.url = None
+  art.htmlfile = None
+  art.pdfrawfile = None
+  art.pdfocr = None
+  art.pdfdecrypt = None
+  art.pdfdmethod = None
+  art.htmlval = None
+  art.pdfval = None
+
+  try:
+    status, puburl, outhtml, outrawpdf = pmid2file(
+      art.pmid, br, outhtml=htmlfile, outpdf=pdfrawfile, doi=art.doi
+    )
+    art.scrapestatus = status
+    art.url = puburl
+    if outhtml:
+      art.htmlfile = os.path.split(outhtml)[-1]
+    if outrawpdf:
+      art.pdfrawfile = os.path.split(outrawpdf)[-1]
+  except Exception as exc:
+    print exc
+    art.scrapestatus = exc.message
+    
+  # Save changes
+  session.commit()
 
 def buildart(art):
 
@@ -197,7 +251,7 @@ def buildart(art):
   
   # Check for article in database
   artobj = session.query(Article).\
-    filter_by(pmid=art['pmid']).first()
+    filter(Article.pmid==art['pmid']).first()
 
   if artobj and artobj.authors:
     print 'Article already complete.'
@@ -223,7 +277,6 @@ def buildart(art):
       doi = xrdoi(art)
     if doi:
       art['doi'] = parser.unescape(doi)
-      #art['doi'] = decode(doi)
 
   # Get affiliation coordinates
   if needsparam(art, artobj, ['affil', 'lat', 'lng', 'gtquery', 'gtlen']):
@@ -260,19 +313,24 @@ def buildart(art):
   return artobj
 
 def batchaddauths():
-  'Add authors to all articles.'
+  """
+  Add authors to all articles
+  """
 
+  # Get articles
   arts = session.query(Article).order_by(Article.pmid)
 
+  # Add authors
   for art in arts:
-    print art.pmid
     addauths(art)
 
   # Save changes
   session.commit()
 
 def addauths(art, commit=False):
-  'Add authors to one article.'
+  """
+  Add authors to an article
+  """
 
   info = ''
 
@@ -318,7 +376,9 @@ def addauths(art, commit=False):
     session.commit()
 
 def batchaddplace():
-  'Add place information to all articles.'
+  """
+  Add place information to all articles
+  """
 
   # Get articles
   arts = session.query(Article).order_by(Article.pmid)
@@ -341,7 +401,9 @@ def batchaddplace():
   session.commit()
 
 def addplace(art, overwrite=False, delay=True, commit=True):
-  'Add place information to one article.'
+  """
+  Add place information to an article
+  """
 
   # Get article object
   artobj = toart(art)
@@ -402,6 +464,9 @@ xskip = [
 ]
 
 def batchxtract():
+  """
+  Extract PDF text from all articles
+  """
   
   # Set up browser
   br = getbr()
@@ -423,6 +488,9 @@ def batchxtract():
     ct += 1
 
 def artxtract(art, br=None, commit=True, totiff=False, overwrite=False):
+  """
+  Extract PDF text from an article
+  """
   
   # Stop if no PDF in record
   if not art.pdfrawfile:

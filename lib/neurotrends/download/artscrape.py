@@ -222,20 +222,6 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
   url = None
   pubopen = False
   
-  ## Get publisher link from PubMed
-  #try:
-  #  url = retry(getpmlink, 5, 5, pmid, br)
-  #except:
-  #  status.append('no puburl from pubmed')
-  #
-  ## Open publisher link from PubMed
-  #if url:
-  #  try:
-  #    retry(br.open, 5, 5, url)
-  #    pubopen = True
-  #  except:
-  #    status.append('invalid puburl from pubmed')
-
   # Get publisher link from DOI
   #if not pubopen and doi:
   if doi:
@@ -246,7 +232,6 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
       url = br.geturl()
     except:
       status.append('invalid puburl from doi')
-      #url = ''
 
   # Get publisher link from PubMed
   if not url:

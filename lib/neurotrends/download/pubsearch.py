@@ -28,8 +28,12 @@ query = \
   ' AND (' + \
     '"psychological phenomena and processes"[MH]' + \
     ' OR "behavior and behavior mechanisms"[MH]' + \
+    ' OR "brain mapping"[MH]' + \
   ')' + \
-  ' AND english[LA]'
+  ' AND english[LA]' + \
+  ' AND "journal article"[PT]' + \
+  ' NOT "review"[PT]' + \
+  ' NOT "meta-analysis[PT]'
 
 def artsearch(query, verbose=True):
 

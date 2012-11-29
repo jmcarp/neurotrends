@@ -1,5 +1,6 @@
 # Import modules
 import re
+import sys
 
 # Import Flask
 from flask import Flask
@@ -21,18 +22,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % (dbfile)
 flaskdb = SQLAlchemy(app)
 
 pubptn = 'ncbi\.nlm\.nih\.gov/pubmed/(\d+)'
-
-bookmarklet = """
-  (function () {
-    var pop = window.open(
-      'http://127.0.0.1:5000/api?puburl=' + 
-        encodeURIComponent(location.href), 
-      'NeuroTrends Lookup', 
-      'width=800, height=600'
-    );
-    void(window.setTimeout('pop.focus()', 250));
-  }())
-"""
 
 @app.route('/')
 def home():
@@ -81,4 +70,7 @@ def apiquery():
   return json.dumps(arts.all(), cls=artcls)
 
 if __name__ == '__main__':
-  app.run()
+  runargs = {}
+  if len(sys.argv) > 1 and sys.argv[1] == 'visible':
+    runargs['host'] = '0.0.0.0'
+  app.run(**runargs)

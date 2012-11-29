@@ -19,6 +19,9 @@ from trendpath import *
 from trenddb import *
 from util import *
 
+## Set up database
+#session = getdb()
+
 # Import sub-project modules
 from download.pubsearch import *
 from pattern import tags
@@ -46,9 +49,9 @@ repxcept = {
   ],
 }
 
-#################
-### Functions ###
-#################
+#############
+# Functions #
+#############
 
 def batchclearattrib(usereport=False):
   
@@ -74,7 +77,6 @@ def batchclearattrib(usereport=False):
 def clearattrib(art, commit=True):
   
   art.attribs = []
-  #art.snippets = []
 
   if commit:
     session.commit()
@@ -159,7 +161,6 @@ def artverify(art, html='', pdf=''):
     pdfprop = None
 
   # Return
-  print htmlprop, pdfprop
   return htmlprop, pdfprop
 
 def checkarts(arts):
@@ -523,7 +524,8 @@ def txt2tag(txt, src, verbose=True):
         continue
       verptn = src[tag][ver]
       for ptn in verptn:
-        if any([res[0] for res in ptn(srctxt)]):
+        #if any([res[0] for res in ptn(srctxt)]):
+        if any([res[0] for res in ptn.apply(srctxt)]):
           taglist.append({'name' : tag, 'ver' : ver})
           foundknownver = True
       #if any([flexsearch(ptn, srctxt) for ptn in verptn]):
@@ -542,7 +544,8 @@ def txt2tag(txt, src, verbose=True):
         else:
           arblist = src[tag]['arbit']
         for arbptn in arblist:
-          arbres = arbptn(srctxt)
+          arbres = arbptn.apply(srctxt)
+          #arbres = arbptn(srctxt)
           #arbres = flexsearch(arbptn, srctxt, fun=re.findall)
           if arbres:
             arbver = [res for res in arbres if res][0]

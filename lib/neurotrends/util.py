@@ -3,6 +3,7 @@ import time
 
 # Import project modules
 from trenddb import *
+#session = getdb()
 
 def toart(art):
   '''Convert article object or PMID to article object'''

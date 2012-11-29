@@ -12,14 +12,29 @@ datadir = '%s/data' % (rootdir)
 # 
 dbfile = '%s/fmri-trends.db' % (datadir)
 
-# Set up engine
-db = create_engine('sqlite:///%s' % (dbfile))
+## Set up engine
+#db = create_engine('sqlite:///%s' % (dbfile))
 
 Base = declarative_base()
 
-########################
-## Association tables ##
-########################
+def getdb(dbfile=dbfile):
+  
+  # Create engine
+  db = create_engine('sqlite:///%s' % (dbfile))
+
+  # Create tables
+  Base.metadata.create_all(db)
+
+  # Start session
+  Session = sessionmaker(bind=db)
+  session = Session()
+
+  # Return
+  return session
+
+######################
+# Association tables #
+######################
 
 # Attribute-Field association
 attribs_fields = Table('attribs_fields', Base.metadata,
@@ -39,9 +54,9 @@ articles_authors = Table('articles_authors', Base.metadata,
   Column('author_id', Integer, ForeignKey('authors.id'))
 )
 
-############
-## Tables ##
-############
+##########
+# Tables #
+##########
 
 class Snippet(Base):
   
@@ -152,12 +167,15 @@ class Place(Base):
   norig = Column(Integer)
 
   # Final query
-  final = Column(String)
+  final = Column(String,
+    info={'vis' : True, 'full' : 'Location'})
   nfinal = Column(Integer)
 
   # Coordinates
-  lon = Column(Float)
-  lat = Column(Float)
+  lon = Column(Float, 
+    info={'vis' : True, 'full' : 'Latitude'})
+  lat = Column(Float, 
+    info={'vis' : True, 'full' : 'Longitude'})
 
   articles = relationship(
     'Article',
@@ -170,36 +188,50 @@ class Place(Base):
     efinal = self.final.encode('raw-unicode-escape')
     return '<%s: %f, %f>' % (efinal, self.lon, self.lat)
 
-  _desc = Column(String)
-  def __setattr__(self, key, val):
-    super(Place, self).__setattr__(key, val)
-    if self.final:
-      if self.lat and self.lon:
-        desc = '%s: %0.2f, %0.2f' % (self.final, self.lat, self.lon)
-      else:
-        desc = self.final
-    else:
-      desc = self.orig
-    super(Place, self).__setattr__('_desc', desc)
+  #_desc = Column(String)
+  #def __setattr__(self, key, val):
+  #  super(Place, self).__setattr__(key, val)
+  #  if key not in  ['lat', 'lon']:
+  #    return
+  #  if self.final:
+  #    if type(self.lat) == float and type(self.lon) == float:
+  #      desc = '%s: %0.2f, %0.2f' % (self.final, self.lat, self.lon)
+  #    else:
+  #      desc = self.final
+  #  else:
+  #    desc = self.orig
+  #  super(Place, self).__setattr__('_desc', desc)
 
 class Article(Base):
 
   __tablename__ = 'articles'
+  __info__ = {
+    'full' : {
+      'attribs' : 'Attributes',
+      'authors' : 'Authors',
+      'place' : 'Place',
+    }
+  }
   
   # Primary key
   id = Column(Integer, primary_key=True)
   
   # Article identifiers
-  pmid = Column(String, unique=True)
-  doi = Column(String)
-  atitle = Column(String)
-  jtitle = Column(String)
+  pmid = Column(String, unique=True, 
+    info={'vis' : True, 'full' : 'PubMed ID'})
+  doi = Column(String, 
+    info={'vis' : True, 'full' : 'Document Object Identifier'})
+  atitle = Column(String, 
+    info={'vis' : True, 'full' : 'Article Title'})
+  jtitle = Column(String, 
+    info={'vis' : True, 'full' : 'Journal Title'})
 
   # PubMed XML
   xml = Column(Text)
   
   # Date
-  pubyear = Column(String)
+  pubyear = Column(String,
+    info={'vis' : True, 'full' : 'Publication Year'})
   pubmonth = Column(String)
   pubday = Column(String)
 
@@ -247,9 +279,4 @@ class Article(Base):
     cascade='all, delete',
   )
 
-# Create tables
-Base.metadata.create_all(db)
-
-# Start session
-Session = sessionmaker(bind=db)
-session = Session()
+session = getdb()
