@@ -4,7 +4,7 @@ Flask==0.9
 Flask-SQLAlchemy==0.16
 #GDAL==1.8.1
 Jinja2==2.6
-MDP==3.2
+#MDP==3.2
 MKL==10.3
 PIL==1.1.7
 PyOpenGL==3.0.1
