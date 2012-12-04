@@ -75,7 +75,7 @@ tags['varian'] = [
   'varian',
 ]
 
-tags['shumadzu'] = [
+tags['shimadzu'] = [
   'shimadzu',
 ]
 

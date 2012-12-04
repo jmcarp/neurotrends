@@ -1,13 +1,13 @@
 # Import external modules
-import os, re
-import functools
+import os
+import re
 import operator
+import functools
 from numpy import linspace
 
 # Import project modules
 from trendpath import *
 from trenddb import *
-#from tagsrc import *
 from pattern import tags as srclist
 from util import *
 
@@ -15,8 +15,9 @@ from util import *
 import rpy2.robjects as ro
 import rpy2.robjects.lib.ggplot2 as ggplot2
 
-## Import map tools
-#ro.r('source("maplib/maptools.R")')
+# Import map tools
+filedir = os.path.split(__file__)[0]
+ro.r('source("%s/maplib/maptools.R")' % (filedir))
 
 minartct = 100
 
@@ -46,12 +47,20 @@ if __name__ == '__main__' and 'qyear' not in locals():
   qyear = getyears()
 
 def getcols(ncols):
+  """
+  Get ggplot-style colors
+  Arguments:
+    ncols (int): Number of colors
+  """
   
   hues = linspace(15, 375, ncols + 1)
   cols = ro.r.hcl(h=list(hues), l=65, c=100)
   return cols[:-1]
 
 def getsuptags(supname, tagname='none'):
+  """
+  Get list of super-ordinate tags
+  """
   
   fieldname = supname + 'name'
   fieldq = session.query(Field.value).filter(Field.name == fieldname)
@@ -62,7 +71,13 @@ def getsuptags(supname, tagname='none'):
   return suptags
 
 def attribs2articles(attribs, uniq=False, place=False):
-  'Return all articles tagged with specified attributes.'
+  """
+  Get articles tagged with specified attributes
+  Arguments:
+    attribs (list): Attrib objects
+    uniq (bool): Remove duplicate articles?
+    place (bool): Restrict to articles with place?
+  """
 
   # Get articles for each attrib
   artgroups = [attrib.articles for attrib in attribs]
@@ -72,7 +87,7 @@ def attribs2articles(attribs, uniq=False, place=False):
     return []
 
   # Flatten article list
-  arts = functools.reduce(operator.add, artgroups)
+  arts = functools.reduce(operator.add, artgroups, [])
 
   # Get unique articles
   if uniq:
@@ -148,7 +163,7 @@ def gettags(supname, tagname='none', tagver='none', tagval='none',
     attribs = session.query(Attrib).filter(q).all()
     return attribs2articles(attribs, uniq=uniq, place=place)
     artgroups = [attrib.articles for attrib in attribs]
-    artflat = functools.reduce(operator.add, artgroups)
+    artflat = functools.reduce(operator.add, artgroups, [])
     if uniq:
       artflat = list(set(artflat))
     if place:
@@ -166,7 +181,7 @@ def gettags(supname, tagname='none', tagver='none', tagval='none',
     return query.all()
   elif rettype == 'article':
     artgroups = [attrib.articles for attrib in query.all()]
-    artflat = functools.reduce(operator.add, artgroups)
+    artflat = functools.reduce(operator.add, artgroups, [])
     if uniq:
       artflat = list(set(artflat))
     return artflat
@@ -365,7 +380,7 @@ def plotvals(supname, tagname='none', plottype='tag', tagver='none',
     artct['all']['all'] = sum([artct[tag]['all'] for tag in tagarts])
   artcoord['all'] = {}
   artcoord['all']['all'] = functools.reduce(
-    operator.add, [artcoord[tag]['all'] for tag in tagarts])
+    operator.add, [artcoord[tag]['all'] for tag in tagarts], [])
   for year in qyear:
     syear = str(year)
     if normbyart:
@@ -376,7 +391,7 @@ def plotvals(supname, tagname='none', plottype='tag', tagver='none',
     else:
       artct['all'][syear] = sum([artct[tag][syear] for tag in tagarts])
     artcoord['all'][syear] = functools.reduce(
-      operator.add, [artcoord[tag][syear] for tag in tagarts])
+      operator.add, [artcoord[tag][syear] for tag in tagarts], [])
 
   for tag in tagarts:
     artprop[tag] = {
@@ -384,14 +399,17 @@ def plotvals(supname, tagname='none', plottype='tag', tagver='none',
     }
     for year in qyear:
       syear = str(year)
-      prop = float(artct[tag][syear]) / artct['all'][syear]
+      if artct['all'][syear]:
+        prop = float(artct[tag][syear]) / artct['all'][syear]
+      else:
+        prop = 0
       artprop[tag][syear] = prop
   
   return artct, artprop, artcoord
 
 def plotmap(location, zoom, title, supname, tagname='none', plottype='tag', 
     verrules=[], vermap={}, vars=None, dv='count', uniq=False, 
-    minprop=None, sort=None, custcols=False, outname=None):
+    minprop=None, sort=None, custcols=False, k=3, fmt='png', outname=None):
    
   # Get versions
   verct, verprop, vercoord = plotvals(supname, tagname, plottype=plottype, uniq=uniq)
@@ -436,14 +454,16 @@ def plotmap(location, zoom, title, supname, tagname='none', plottype='tag',
 
   # Make pie chart map
   # Note: Call function using robjects dict to avoid dot conflict
-  ro.r['plot.groups'](df, gmap, k=3, maxsize=0.125, 
-    splitvar='pyr', title=title, outname='%s/map/pkg-year.pdf' % (figdir))
-  ro.r['plot.groups'](df, gmap, k=3, maxsize=0.125, 
-    title=title, outname='%s/map/pkg-all.pdf' % (figdir))
+  outname = '%s/map/%s-year' % (figdir, outname)
+  ro.r['plot.groups'](df, gmap, k=k, maxsize=0.09, 
+    splitvar='pyr', title=title, outname=outname)
+  ro.r['plot.groups'](df, gmap, k=k, maxsize=0.09, 
+    title=title, outname=outname)
 
-def makeverplot(supname, tagname, plottype='tag', anytag=False, verrules=None, vermap={}, 
-    vars=None, dv='count', uniq=False, normbyart=False, minprop=None, sort='count', bintype='year',
-    custcols=False, title='', outname=None):
+def makeverplot(supname, tagname, plottype='tag', anytag=False, 
+    verrules=None, vermap={}, vars=None, dv='count', uniq=False, 
+    normbyart=False, minprop=None, sort='count', bintype='year',
+    custcols=False, title='', fmt='png', outname=None):
   
   # Get versions
   verct, verprop, vercoord = plotvals(supname, tagname, plottype=plottype, anytag=anytag, uniq=uniq, normbyart=normbyart)
@@ -487,13 +507,15 @@ def makeverplot(supname, tagname, plottype='tag', anytag=False, verrules=None, v
   if 'other' in verct and verct['other']['all']:
     ordvars.append('other')
     if custcols:
-      cols = ro.r.c('gray', cols)
+      cols = ro.r.c('#ABABAB', cols)
+      #cols = ro.r.c('gray', cols)
 
   # Add <none> label
   if 'none' in verct and verct['none']['all']:
     ordvars.append('none')
     if custcols:
-      cols = ro.r.c('gray', cols)
+      cols = ro.r.c('#808080', cols)
+      #cols = ro.r.c('gray', cols)
 
   # Reverse custom colors for <all> bin
   if bintype == 'all' and 'cols' in locals():
@@ -516,10 +538,8 @@ def makeverplot(supname, tagname, plottype='tag', anytag=False, verrules=None, v
   # Get y-label
   if dv == 'count':
     labargs['y'] = 'Count'
-    #ylab = 'Count'
   elif dv == 'prop':
     labargs['y'] = 'Proportion'
-    #ylab = 'Proportion'
 
   # Set up aes() arguments
   aesargs = {}
@@ -579,6 +599,9 @@ def makeverplot(supname, tagname, plottype='tag', anytag=False, verrules=None, v
   
   # Save plot
   if outname:
+    # Change output extention to <fmt>
+    outroot, outext = os.path.splitext(outname)
+    outname = '%s.%s' % (outroot, fmt)
     # Include default dimensions to suppress ggsave output
     ro.r.ggsave(outname, height=7, width=7)
 
@@ -587,7 +610,7 @@ def plotonetag(supname, tagname):
   makeverplot(supname, [tagname], plottype='tag', 
     vars=[tagname], dv='prop', bintype='year', normbyart=True,
     title=tagname,
-    outname='%s/one/%s-%s.pdf' % (figdir, supname, tagname))
+    outname='%s/one/%s-%s' % (figdir, supname, tagname))
 
 def plotspmvers(name='', dv='count', bintype='year', anytag=False):
   
@@ -601,97 +624,125 @@ def plotspmvers(name='', dv='count', bintype='year', anytag=False):
   makeverplot('pkg', 'spm', plottype='ver', uniq=False, 
     verrules=verrules, vermap=vermap, custcols=True, dv=dv, sort=None,
     vars=vernames, title='SPM Version', bintype=bintype, anytag=anytag,
-    outname='%s/grp/spmver-%s.pdf' % (figdir, name))
+    outname='%s/grp/spmver-%s' % (figdir, name))
+
+def matver(ver):
+  
+  if ver == 'all':
+    return 'all'
+  return ver[:1]
+
+def plotmatvers(name='', dv='count', bintype='year', anytag=False):
+  
+  verrules = [
+    matver,
+  ]
+  vermap = {
+    '' : 'none',
+  }
+  makeverplot('lang', 'matlab', plottype='ver', uniq=False,
+    custcols=True, dv=dv, verrules=verrules, vermap=vermap,
+    sort='alpha', minprop=0.01,
+    title='Matlab Version', bintype=bintype, anytag=anytag,
+    outname='%s/grp/matver-%s' % (figdir, name))
 
 def plotfield(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('mag', 'field', plottype='val', anytag=anytag, 
     uniq=False, dv=dv, bintype=bintype,
     minprop=0.01, sort='alpha', custcols=True, title='Field Strength',
-    outname='%s/grp/field-%s.pdf' % (figdir, name))
+    outname='%s/grp/field-%s' % (figdir, name))
 
 def plotpkgs(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('pkg', 'none', plottype='tag', anytag=anytag,
     minprop=0.01, dv=dv, custcols=True, title='Software Package',
     bintype=bintype,
-    outname='%s/grp/pkg-%s.pdf' % (figdir, name))
+    outname='%s/grp/pkg-%s' % (figdir, name))
 
 def plottask(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('task', 'none', plottype='tag', anytag=anytag,
     minprop=0.01, dv=dv, custcols=True, title='Task Presentation Package',
     bintype=bintype,
-    outname='%s/grp/task-%s.pdf' % (figdir, name))
+    outname='%s/grp/task-%s' % (figdir, name))
 
 def plotdes(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('des', 'none', plottype='tag', anytag=anytag,
     dv=dv, custcols=True, title='Design', bintype=bintype,
-    outname='%s/grp/des-%s.pdf' % (figdir, name))
+    outname='%s/grp/des-%s' % (figdir, name))
 
 def plotaccel(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('pulse', Field.value.in_(['sense', 'grappa', 'presto', 'smash']), plottype='tag', anytag=anytag,
   dv=dv, bintype=bintype, custcols=True, title='Acceleration Method',
-  outname='%s/grp/accel-%s.pdf' % (figdir, name))
+  outname='%s/grp/accel-%s' % (figdir, name))
 
 def plotseq(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('pulse', Field.value.in_(['gradient', 'spin', 'grase']), plottype='tag', anytag=anytag,
   dv=dv, bintype=bintype, custcols=True, title='Acquisition Sequence',
-  outname='%s/grp/seq-%s.pdf' % (figdir, name))
+  outname='%s/grp/seq-%s' % (figdir, name))
 
 def plottraj(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('pulse', Field.value.in_(['epi', 'spiral']), plottype='tag', anytag=anytag,
   dv=dv, bintype=bintype, custcols=True, title='Acquisition Trajectory',
-  outname='%s/grp/traj-%s.pdf' % (figdir, name))
+  outname='%s/grp/traj-%s' % (figdir, name))
 
 def plotlang(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('lang', 'none', plottype='tag', anytag=anytag,
     dv=dv, bintype=bintype, custcols=True, title='Programming Language',
     minprop=0.005,
-    outname='%s/grp/lang-%s.pdf' % (figdir, name))
+    outname='%s/grp/lang-%s' % (figdir, name))
 
 def plotmod(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('mod', tagname=~Field.value.in_(['rfx', 'ffx']), 
     plottype='tag', anytag=anytag, dv=dv, bintype=bintype,
     custcols=True, title='Model',
-    outname='%s/grp/mod-%s.pdf' % (figdir, name))
+    outname='%s/grp/mod-%s' % (figdir, name))
 
 def plotmcc(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('mcc', 'none', plottype='tag', anytag=anytag,
     dv=dv, bintype=bintype, custcols=True, title='Multiple Comparison Correction',
-    outname='%s/grp/mcc-%s.pdf' % (figdir, name))
+    outname='%s/grp/mcc-%s' % (figdir, name))
 
-def plotos(name='', dv='count', bintype='year', anytag=False):
+def plotopsys(name='', dv='count', bintype='year', anytag=False):
   
-  makeverplot('os', tagname=~Field.value.in_(['solaris']),
+  makeverplot('opsys', tagname=~Field.value.in_(['solaris']),
     plottype='tag', anytag=anytag,
     dv=dv, bintype=bintype, custcols=True, title='Operating System',
-    outname='%s/grp/os-%s.pdf' % (figdir, name))
+    outname='%s/grp/os-%s' % (figdir, name))
 
 def plotmagvend(name='', dv='count', bintype='year', anytag=False):
   
   makeverplot('mag', tagname=~Field.value.in_(['field', 'varian']),
     plottype='tag', anytag=anytag, dv=dv, bintype=bintype,
-    outname='%s/grp/magvend-%s.pdf' % (figdir, name),
+    outname='%s/grp/magvend-%s' % (figdir, name),
     title='Magnet Vendor')
 
-def plotmeta(name='', dv='count', bintype='year', anytag=False):
+def plotpkgmap(location='london, uk', zoom=8, locshort=''):
   
-  makeverplot('tech', Field.value.in_(['ale', 'kda', 'mkda']), plottype='tag', anytag=anytag,
-  dv=dv, bintype=bintype, custcols=True, title='Meta-Analysis',
-  outname='%s/grp/meta-%s.pdf' % (figdir, name))
+  # Get short location
+  if not locshort:
+    locshort = location.split(',')[0]
 
-def plotpkgmap():
+  # Get output name
+  outname = 'pkg-%s' % (locshort)
+
+  # Plot
+  plotmap(location, zoom, 'Package', 'pkg', plottype='tag', 
+    minprop=0.05, outname=outname)
+
+def argh():
   
-  plotmap('london, uk', 8, 'Package', 'pkg', plottype='tag', 
-    minprop=0.05)
+  plotpkgmap(location='london, uk', zoom=8)
+  plotpkgmap(location='boston, ma', zoom=8)
+  plotpkgmap(location='california', zoom=6)
 
 plottypes = [
   {'name' : 'count-all', 'dv' : 'count', 'bintype' : 'all'},
@@ -703,20 +754,20 @@ plottypes = [
 def batchplottime():
   
   for plottype in plottypes:
-    #plotpkgs(**plottype)
-    #plotmagvend(**plottype)
-    #plotmod(**plottype)
-    #plotmcc(**plottype)
-    #plotdes(**plottype)
-    #plotfield(**plottype)
-    #plotspmvers(**plottype)
-    #plottask(**plottype)
-    #plotlang(**plottype)
-    #plotaccel(**plottype)
-    #plottraj(**plottype)
-    #plotseq(**plottype)
-    #plotos(**plottype)
-    plotmeta(**plottype)
+    plotpkgs(**plottype)
+    plotmagvend(**plottype)
+    plotmod(**plottype)
+    plotmcc(**plottype)
+    plotdes(**plottype)
+    plotfield(**plottype)
+    plotspmvers(**plottype)
+    plotmatvers(**plottype)
+    plottask(**plottype)
+    plotlang(**plottype)
+    plotaccel(**plottype)
+    plottraj(**plottype)
+    plotseq(**plottype)
+    plotopsys(**plottype)
 
 def batchplotone():
   

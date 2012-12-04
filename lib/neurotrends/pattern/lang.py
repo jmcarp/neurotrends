@@ -101,6 +101,7 @@ def getmatvers(verbose=True):
 
 # Add Matlab versions
 matvers = getmatvers()
-matnegahead = '(a-z|\.[1-9])'
+matnegahead = '(\d|\.[1-9]|st|nd|rd|th)'
+#matnegahead = '(a-z|\.[1-9])'
 tags['matlab'] = makever('matlab', tags['matlab'], matvers,
   escchars='.', negahead=matnegahead)

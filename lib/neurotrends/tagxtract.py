@@ -19,9 +19,6 @@ from trendpath import *
 from trenddb import *
 from util import *
 
-## Set up database
-#session = getdb()
-
 # Import sub-project modules
 from download.pubsearch import *
 from pattern import tags
@@ -54,6 +51,11 @@ repxcept = {
 #############
 
 def batchclearattrib(usereport=False):
+  """
+  Clear all Attributes, Fields, and Snippets from database
+  Arguments:
+    usereport (bool): Just clear from articles in fmri-report
+  """
   
   if not usereport:
 
@@ -67,14 +69,22 @@ def batchclearattrib(usereport=False):
     session.execute('DELETE from attribs_fields')
   
   else:
-
+    
+    # Clear fields from articles one by one
     arts = getreparts()
     for art in arts:
       clearattrib(toart(art), commit=False)
 
+  # Save changes
   session.commit()
 
 def clearattrib(art, commit=True):
+  """
+  Clear Attribs from an article
+  Arguments:
+    art (Article): Article object
+    commit (bool): Save changes to database?
+  """
   
   art.attribs = []
 
@@ -91,6 +101,9 @@ def cleantxt(txt, ptns):
   return ctxt
 
 def getreparts():
+  """
+  Get articles from fmri-report
+  """
 
   report = rp.ezread()
   arts = [art['pmid'] for art in report 
@@ -98,12 +111,20 @@ def getreparts():
   return arts
 
 def batchartparse(usereport=False, groups=[]):
+  """
+  Extract meta-data from all articles
+  Arguments:
+    usereport (bool): Only process articles from fmri-report
+    groups (list): Tag groups to process; if empty, process all groups
+  """
   
+  # Get articles
   if usereport:
     arts = getreparts()
   else:
     arts = session.query(Article).all()
 
+  # Extract tags
   for artidx in range(len(arts)):
     
     print 'Working on article %d of %d...' % (artidx + 1, len(arts))
@@ -114,6 +135,12 @@ def batchartparse(usereport=False, groups=[]):
   session.commit()
 
 def artverify(art, html='', pdf=''):
+  """
+  Check whether HTML and PDF documents match abstract text
+  Arguments:
+    html (str): HTML text (optional)
+    pdf (str): PDF text (optional)
+  """
 
   # Cast article to Article
   art = toart(art)
@@ -143,6 +170,7 @@ def artverify(art, html='', pdf=''):
     pdf = loadpdf(art)
     pdf = UnicodeDammit(pdf).unicode
 
+  # To lower-case
   html = html.lower()
   pdf = pdf.lower()
 
@@ -164,6 +192,15 @@ def artverify(art, html='', pdf=''):
   return htmlprop, pdfprop
 
 def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
+  """
+  Load HTML text for an article
+  Arguments:
+    art (str/Article): PubMed ID or Article object
+    overwrite (bool): Overwriting existing HTML file?
+    method (str): Parsing method (lxml or soup)
+    raw (bool): Use unparsed HTML?
+    verbose (bool): Print status?
+  """
   
   artobj = toart(art)
   htmltxt = ''
@@ -218,6 +255,12 @@ def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
   return htmltxt
 
 def loadpdf(art, verbose=False):
+  """
+  Load PDF text for an article
+  Arguments:
+    art (str/Article): PubMed ID or Article object
+    verbose (bool): Print status?
+  """
 
   artobj = toart(art)
   pdftxt = ''
@@ -230,9 +273,6 @@ def loadpdf(art, verbose=False):
       
       s = shelve.open(pdffile)
       pdftxt = s['pdfinfo']['txt']
-      ## Convert to plain text
-      #pdftxt = pdfjoin(pdffile)
-      #pdftxt = UnicodeDammit(pdftxt).unicode
       
       # Done
       if verbose:
@@ -241,7 +281,18 @@ def loadpdf(art, verbose=False):
   return pdftxt
 
 def artparse(art, commit=True, overwrite=False, verify=True, 
-    groups=[], verbose=False):
+    groups=[], addsnips=False, verbose=False):
+  """
+  Extract meta-data from article and write to database
+  Arguments:
+    art (str/Article): PubMed ID or Article object
+    commit (bool): Commit changes to database?
+    overwrite (bool): Overwrite existing data?
+    verify (bool): Verify abstract text?
+    groups (list): Tag groups to process; if [], use all groups
+    addsnips (bool): Save snippets to database?
+    verbose (bool): Print status?
+  """
   
   # Find article
   artobj = toart(art)
@@ -284,8 +335,10 @@ def artparse(art, commit=True, overwrite=False, verify=True,
   else:
     procsrc = tags
 
+  # Extract tags from documents
   taggroups = procdocs(docs, procsrc)
 
+  # Add tags to database
   for groupname in taggroups:
     
     taggroup = taggroups[groupname]
@@ -342,15 +395,16 @@ def artparse(art, commit=True, overwrite=False, verify=True,
         artobj.attribs.append(attobj)
       
       # Add snippets
-      for sniptxt in taggroup['snippets']:
-        if not sniptxt:
-          continue
-        exsnip = [snipobj for snipobj in artobj.snippets
-          if snipobj.name == groupname 
-          and snipobj.text == sniptxt
-        ]
-        if not any(exsnip):
-          artobj.snippets.append(Snippet(name=groupname, text=sniptxt))
+      if addsnips:
+        for sniptxt in taggroup['snippets']:
+          if not sniptxt:
+            continue
+          exsnip = [snipobj for snipobj in artobj.snippets
+            if snipobj.name == groupname 
+            and snipobj.text == sniptxt
+          ]
+          if not any(exsnip):
+            artobj.snippets.append(Snippet(name=groupname, text=sniptxt))
   
   # Save changes
   if commit:
@@ -376,6 +430,12 @@ def pdfjoin(pdffile):
   return pdftxt
   
 def parsehtml(html, method='soup'):
+  """
+  Parse HTML document
+  Arguments:
+    html (str): Raw HTML text
+    method (str): Parsing method (lxml or soup)
+  """
   
   if method == 'soup':
 
@@ -511,13 +571,9 @@ def txt2tag(txt, src, verbose=True):
         continue
       verptn = src[tag][ver]
       for ptn in verptn:
-        #if any([res[0] for res in ptn(srctxt)]):
         if any([res[0] for res in ptn.apply(srctxt)]):
           taglist.append({'name' : tag, 'ver' : ver})
           foundknownver = True
-      #if any([flexsearch(ptn, srctxt) for ptn in verptn]):
-      #  taglist.append({'name' : tag, 'ver' : ver})
-      #  foundknownver = True
 
     # Extract version (arbitrary)
     if not foundknownver:
@@ -532,8 +588,6 @@ def txt2tag(txt, src, verbose=True):
           arblist = src[tag]['arbit']
         for arbptn in arblist:
           arbres = arbptn.apply(srctxt)
-          #arbres = arbptn(srctxt)
-          #arbres = flexsearch(arbptn, srctxt, fun=re.findall)
           if arbres:
             arbver = [res for res in arbres if res][0]
             if type(arbver) == tuple:

@@ -4,6 +4,6 @@
 
 <h2>Welcome to NeuroTrends!</h2>
 
-Handy bookmarklet: <a href="javascript:(function () {var pop = window.open('http://127.0.0.1:5000/api?puburl=' + encodeURIComponent(location.href), 'NeuroTrends Lookup', 'width=800, height=600'); void(window.setTimeout('pop.focus()', 250));}())">NeuroTrends Lookup</a>
+Handy bookmarklet: <a href="javascript:(function () {var pop = window.open('{{ url_for('searchquery', _external=True) }}?puburl=' + encodeURIComponent(location.href), 'NeuroTrends Lookup', 'width=800, height=600'); void(window.setTimeout('pop.focus()', 250));}())">NeuroTrends Lookup</a>
 
 {% endblock %}

@@ -129,8 +129,9 @@ tags['fiswidgets'] = {
 ################
 
 # Add SPM versions
+# Excluded SPM94
 spmvers = [
-  '94', '96', '96b', '97', '99', '99b',
+  '96', '96b', '97', '99', '99b',
   '2', '2b', '5', '5b', '8', '8b'
 ]
 spmnegbehind = ':\s'

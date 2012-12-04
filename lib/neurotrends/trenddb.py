@@ -9,18 +9,18 @@ from sqlalchemy.orm.collections import attribute_mapped_collection
 rootdir = '/Users/jmcarp/Dropbox/projects/fmri-software'
 datadir = '%s/data' % (rootdir)
 
-# 
+# Files
 dbfile = '%s/fmri-trends.db' % (datadir)
-
-## Set up engine
-#db = create_engine('sqlite:///%s' % (dbfile))
 
 Base = declarative_base()
 
-def getdb(dbfile=dbfile):
+def getdb(sqltype='postgres', dbfile=dbfile):
   
   # Create engine
-  db = create_engine('sqlite:///%s' % (dbfile))
+  if sqltype == 'sqlite':
+    db = create_engine('sqlite:///%s' % (dbfile))
+  elif sqltype == 'postgres':
+    db = create_engine('postgresql+psycopg2://jmcarp@localhost/postgres')
 
   # Create tables
   Base.metadata.create_all(db)
@@ -30,7 +30,7 @@ def getdb(dbfile=dbfile):
   session = Session()
 
   # Return
-  return session
+  return db, session
 
 ######################
 # Association tables #
@@ -100,7 +100,8 @@ class Attrib(Base):
   id = Column(Integer, primary_key=True)
   
   # Attribute name
-  name = Column(String)
+  name = Column(String,
+    info={'vis' : True, 'full' : 'Name'})
   
   # Attribute category
   category = Column(String)
@@ -116,7 +117,8 @@ class Attrib(Base):
   def __repr__(self):
     return '<%s: %s>' % (self.name, ', '.join([repr(self.fields[f]) for f in self.fields]))
 
-  _desc = Column(String)
+  _desc = Column(String, 
+    info={'vis' : True, 'full' : 'Description'})
   def __setattr__(self, key, val):
     super(Attrib, self).__setattr__(key, val)
     if self.name is None:
@@ -124,8 +126,11 @@ class Attrib(Base):
     desc = []
     namekey = self.name + 'name'
     if namekey in self.fields:
-      desc.append('%s: %s' % (self.name, self.fields[namekey].value))
-    details = [self.fields[key].value for key in self.fields if key != namekey]
+      desc.append(self.fields[namekey].value)
+    details = [
+      self.fields[key].value for key in self.fields 
+      if key != namekey and self.fields[key].value
+    ]
     if details:
       desc.append(', '.join(details))
     super(Attrib, self).__setattr__('_desc', ' '.join(desc))
@@ -144,7 +149,8 @@ class Author(Base):
   def __repr__(self):
     return '<%s, %s>' % (self.lastname, self.frstname)
 
-  _desc = Column(String)
+  _desc = Column(String,
+    info={'vis' : True, 'full' : 'Name'})
   def __setattr__(self, key, val):
     super(Author, self).__setattr__(key, val)
     names = []
@@ -245,6 +251,10 @@ class Article(Base):
   pdfrawfile = Column(String)
   pdftxtfile = Column(String)
 
+  # Extration methods
+  htmlmeth = Column(String)
+  pdfmeth = Column(String)
+
   # File validation
   htmlval = Column(Float)
   pdfval = Column(Float)
@@ -279,4 +289,4 @@ class Article(Base):
     cascade='all, delete',
   )
 
-session = getdb()
+db, session = getdb()

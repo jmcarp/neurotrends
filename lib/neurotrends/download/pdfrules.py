@@ -26,7 +26,6 @@ pdfptns = [
 pdfposptn = ['download']
 pdfnegptn = [
   'citation',
-  #'pubcat',     # Avoid publisher info for Liebert Publishers
   'download publication list',   # Avoid publisher info for Liebert Publishers
 ]
 
@@ -55,7 +54,11 @@ imgaltptn = ['full text', 'you can view this text']
 imgsrcptn = ['(?<!mmc_)(?<!icon_)pdf\.gif', 'pass\.jpg']
 
 def pdfdown(br):
-  '''Download PDF.'''
+  """
+  Download PDF document
+  Arguments:
+    br (mechanize.Browser): Browser pointed to publisher link
+  """
   
   # ScienceDirect redirect
   sciredir(br)
@@ -102,7 +105,8 @@ def pdfdown(br):
   if not img:
     img = soup.find('img', 
       {'src' : lambda src:
-        type(src) in [str, unicode] and any([re.search(ptn, src, re.I) for ptn in imgsrcptn])
+        type(src) in [str, unicode] and 
+          any([re.search(ptn, src, re.I) for ptn in imgsrcptn])
       }
     )
   if img:
@@ -135,6 +139,7 @@ def pdfdown(br):
       #if br.geturl() != url:
       #  br.open(url)
   
+  # Read Browser contents
   html, soup = br2docs(br)
 
   # Get PDF from meta tag
@@ -142,7 +147,7 @@ def pdfdown(br):
     return True
 
   # Get PDF from iframe tag
-  iframe = soup.findAll(re.compile('^i?frame$'))#, src=re.compile('\.pdf'))
+  iframe = soup.findAll(re.compile('^i?frame$'))
   if iframe:
     for frame in iframe:
       try:
@@ -164,7 +169,12 @@ def pdfdown(br):
   return False
 
 def verpdf(br=None, resp=None):
-  'Verify PDF'
+  """
+  Check whether document is a PDF
+  Arguments:
+    br (mechanize.Browser): Browser pointed to document (optional)
+    resp (str): Browser response (optional)
+  """
   
   print 'Verifying PDF: %s...' % (br.geturl())
 
@@ -195,6 +205,9 @@ def verpdf(br=None, resp=None):
   return False
 
 def pdfnature(br):
+  """
+  Download PDF from Nature
+  """
 
   htmlnature(br)
   try:
@@ -205,6 +218,9 @@ def pdfnature(br):
   br.follow_link(text_regex=re.compile('pdf', re.I))
 
 def pdfmedsci(br):
+  """
+  Download PDF from Medical Science Monitor
+  """
   
   html = br.response().read()
   freeloc = re.search('window\.location=\'(.*?)\'', html)
@@ -215,6 +231,9 @@ def pdfmedsci(br):
     br.open(freeaddr)
 
 def pdfama(br):
+  """
+  Download PDF from AMA
+  """
 
   url = br.geturl()
   url = re.sub('content\/full', 'reprint', url)
@@ -222,6 +241,9 @@ def pdfama(br):
   br.open(url)
 
 def pdffrontiers(br):
+  """
+  Download PDF from Frontiers
+  """
 
   # Parse HTML
   html, soup = br2docs(br)
@@ -240,6 +262,9 @@ def pdffrontiers(br):
   br.open(pdflink)
 
 def pdfwk(br):
+  """
+  Download PDF from Wolters-Kluwer
+  """
 
   htmlwk(br)
 
@@ -278,6 +303,9 @@ def pdfwk(br):
     return
 
 def pdfapa(br):
+  """
+  Download PDF from APA
+  """
   
   htmlapa(br)
 

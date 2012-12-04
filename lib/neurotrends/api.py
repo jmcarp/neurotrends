@@ -1,10 +1,74 @@
-
-# Modified from http://stackoverflow.com/questions/5022066/how-to-serialize-sqlalchemy-result-to-json
-import json
+# Adapted from http://stackoverflow.com/questions/5022066/how-to-serialize-sqlalchemy-result-to-json
+import collections
 from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm.properties import RelationshipProperty
+
+from BeautifulSoup import UnicodeDammit
+from trenddb import *
+
+def thing2unicode(thing):
+  
+  if type(thing) in [str, unicode]:
+    return UnicodeDammit(thing).unicode
+  return UnicodeDammit(str(thing)).unicode
+
+def data2html(data, indent=0, ichar='  '):
+  
+  ichar = unicode(ichar)
+
+  if isinstance(data, list):
+    if len(data) == 1:
+      return data2html(data[0], indent=indent)
+    html = []
+    html.append(ichar * indent + '<ul>')
+    for idx in range(len(data)):
+      item = data[idx]
+      html.append(ichar * (indent + 1) + '<li>')
+      html.extend(data2html(item, indent=indent+2))
+      html.append(ichar * (indent + 1) + '</li>')
+    html.append(ichar * indent + '</ul>')
+    return html
+
+  if isinstance(data, dict):
+    html = []
+
+    if len(data) == 1:
+      key = data.keys()[0]
+      html.append('%s' % (key))
+      html.extend(data2html(data[key], indent=indent+1))
+      return html
+
+    html.append(ichar * indent + '<ul>')
+    for key in data:
+      val = data[key]
+      usediv = isinstance(val, dict) or isinstance(val, list)
+      html.append(ichar * (indent + 1) + '<li>')
+      if usediv:
+        html.append(ichar * (indent + 1) + '<div class="head">')
+      html.append(ichar * (indent + 2) + '%s' % (key))
+      if usediv:
+        html.append(ichar * (indent + 1) + '</div>')
+        html.append(ichar * (indent + 1) + '<div class="tail">')
+      html.extend(data2html(val, indent=indent+2))
+      if usediv:
+        html.append(ichar * (indent + 1) + '</div>')
+      html.append(ichar * (indent + 1) + '</li>')
+    html.append(ichar * indent + '</ul>')
+    return html
+
+  return [ichar * indent + thing2unicode(data)]
 
 def ismeta(obj):
   return isinstance(obj.__class__, DeclarativeMeta)
+
+def getproperties(obj):
+  return obj.__table__.columns.keys()
+
+def getrelations(obj):
+  return [
+    prop.key for prop in obj.__mapper__.iterate_properties 
+    if isinstance(prop, RelationshipProperty)
+  ]
 
 def getinfo(obj, field, infofield, type='prop', default=None):
 
@@ -31,52 +95,48 @@ def getinfo(obj, field, infofield, type='prop', default=None):
   # If not found return default
   return default
 
-def new_alchemy_encoder(revisit_self=False, fields_to_expand=[], ignore_fields=[], ignore_objs=[]):
-    _visited_objs = []
-    class AlchemyEncoder(json.JSONEncoder):
-        def default(self, obj):
-            if ismeta(obj):
-                # don't re-visit self
-                if revisit_self:
-                    if obj in _visited_objs:
-                        return None
-                    _visited_objs.append(obj)
-                
-                if hasattr(obj, '_desc'):
-                  return getattr(obj, '_desc')
+fields_to_expand = ['place', 'authors', 'attribs']
+ignore_objs = []#[Attrib, Field]
+def sqla2dict(obj):
+    
+  if isinstance(obj, list):
 
-                # go through each field in this SQLalchemy class
-                fields = {}
-                #for field in [x for x in dir(obj) if not x.startswith('_') and not x.endswith('id') and x != 'metadata']:
-                for field in dir(obj):
-                    if field.startswith('_'):
-                      continue
-                    if field.endswith('id'):
-                      continue
-                    if field == 'metadata':
-                      continue
-                    if field in ignore_fields:#['articles']:
-                      continue
-                    if not getinfo(obj, field, 'vis', 'prop', False) and field not in fields_to_expand:
-                      continue
-                    fname = getinfo(obj, field, 'full', 'prop', field)
-                    val = obj.__getattribute__(field)
+    return [sqla2dict(item) for item in obj]
 
-                    # is this field another SQLalchemy object, or a list of SQLalchemy objects?
-                    if ismeta(val) or isinstance(val, list):# and len(val) > 0 and ismeta(val[0]):
-                        # unless we're expanding this field, stop here
-                        if field not in fields_to_expand or obj.__class__ in ignore_objs:#[Field, Attrib]:
-                            # not expanding this field: set it to None and continue
-                            continue
-                        print 'here', field
-                        fname = getinfo(obj, field, 'full', 'rel', field)
-                        print 'there', fname
-                    
-                    print field, fname
-                    fields[fname] = val
+  if isinstance(obj, dict):
 
-                # a json-encodable dict
-                return fields
+    return collections.OrderedDict(
+      [(key, sqla2dict(obj[key])) for key in obj]
+    )
 
-            return json.JSONEncoder.default(self, obj)
-    return AlchemyEncoder
+  if ismeta(obj):
+    
+    fields = collections.OrderedDict()
+    
+    keys = getproperties(obj) + getrelations(obj)
+
+    if '_desc' in keys:
+      fname = getinfo(obj, '_desc', 'full', 'prop')
+      return obj._desc
+
+    for field in keys:
+
+      if not getinfo(obj, field, 'vis', 'prop', False) \
+          and field not in fields_to_expand:
+        continue
+
+      fname = getinfo(obj, field, 'full', 'prop', field)
+      val = obj.__getattribute__(field)
+
+      if ismeta(val) or isinstance(val, list):
+        #if field not in fields_to_expand or obj.__class__ in ignore_objs:
+        if obj.__class__ in ignore_objs:
+          continue
+        fname = getinfo(obj, field, 'full', 'rel', field)
+        val = sqla2dict(val)
+
+      fields[fname] = val
+
+    return fields
+
+  return obj

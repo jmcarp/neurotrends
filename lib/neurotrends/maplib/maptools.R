@@ -380,21 +380,26 @@ plot.groups = function(data, gmap, dv='pkg', k=NULL, h=NULL,
 
   }
 
-  # Set up graphics
-  graphics.off()
-  dev.new()
-  defdev = dev.cur()
+  ## Set up graphics
+  #graphics.off()
+  #dev.new()
+  #defdev = dev.cur()
 
   # Set up PDF
-  if (!is.null(outname)) {
-    pdf(outname)
-    dev.set(defdev)
-  }
+  #if (!is.null(outname)) {
+  #  pdf(outname)
+  #  dev.set(defdev)
+  #}
 
   for (splitidx in 1 : length(usplit)) {
     
     # Get value of split variable
     splitval = usplit[splitidx]
+
+    if (!is.null(outname)) {
+      savename = sprintf('%s-%s.png', outname, tolower(splitval))
+      png(savename)
+    }
 
     # Initialize
     groblist = list()
@@ -450,17 +455,20 @@ plot.groups = function(data, gmap, dv='pkg', k=NULL, h=NULL,
       widths=unit.c(unit(1, 'npc') - legobj$width, legobj$width), 
       ncol=2)
     
-    # Copy figure to PDF
     if (!is.null(outname)) {
-      dev.copy()
-      dev.set(defdev)
+      dev.off()
     }
+    ## Copy figure to PDF
+    #if (!is.null(outname)) {
+    #  dev.copy()
+    #  dev.set(defdev)
+    #}
 
   }
 
   # Close PDF device
-  if (!is.null(outname)) {
-    dev.off(defdev + 1)
-  }
+  #if (!is.null(outname)) {
+  #  dev.off(defdev + 1)
+  #}
 
 }

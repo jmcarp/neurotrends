@@ -6,14 +6,30 @@ import mechanize
 # 
 from BeautifulSoup import BeautifulSoup as bs
 
-def umlogin(br, userfile=None):
-  'Log in to UM services.'
-
-  # Open login page
+def checkproxy(br):
+  
   br.open('http://weblogin.umich.edu')
-
-  # Quit if already logged in
   if br.geturl() == 'https://weblogin.umich.edu/services/':
+    return True
+  return False
+
+def umlogin(br, userfile=None):
+  """
+  Log in to UM proxy
+  Arguments:
+    br (mechanize.Browser): Browser object
+    userfile (str): Path to name/password file
+  """
+
+  ## Open login page
+  #br.open('http://weblogin.umich.edu')
+  #
+  ## Quit if already logged in
+  #if br.geturl() == 'https://weblogin.umich.edu/services/':
+  #  return
+
+  loggedin = checkproxy(br)
+  if loggedin:
     return
   
   # Select form

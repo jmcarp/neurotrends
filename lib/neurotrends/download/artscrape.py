@@ -1,7 +1,8 @@
-
-# Import libraries
+# Import built-in modules
 import time
-import os, re, sys
+import os
+import re
+import sys
 
 # Set timeout for Browser objects
 import socket
@@ -9,18 +10,24 @@ socket.setdefaulttimeout(60)
 
 from BeautifulSoup import BeautifulSoup as bs
 
-# Import internal libraries
+# Import project modules
 from mechtools import *
 from htmlrules import *
 from pdfrules import *
 from journalinfo import *
 from util import *
 
-# 
+# Links
 pmbase = 'http://www.ncbi.nlm.nih.gov/pubmed'
 doibase = 'http://dx.doi.org'
 
 def brdump(br, outname):
+  """
+  Write contents of browser to file
+  Arguments:
+    br (mechanize.Browser): Browser object
+    outname (str): Output file
+  """
   
   if outname:
     fh = open(outname, 'w')
@@ -28,6 +35,12 @@ def brdump(br, outname):
     fh.close()
 
 def getpmlink(pmid, br):
+  """
+  Get publisher link from PubMed ID
+  Arguments:
+    pmid (str): PubMed ID
+    br (mechanize.Browser): Browser object
+  """
   
   pmurl = '%s/%s' % (pmbase, pmid)
   br.open(pmurl)
@@ -41,25 +54,35 @@ def getpmlink(pmid, br):
     raise Exception('no puburl from pubmed')
 
 def libproxy(br):
+  """
+  Redirect browser through UM Library proxy
+  Browser must already be logged in to UM Services
+  Arguments:
+    br (mechanize.Browser): Browser object
+  """
   
-  url = br.geturl()
-
-  liburl = url
+  # Initialize
+  origurl = br.geturl()
+  liburl = origurl
   liberror = None
 
+  # Quit if not logged in
+  if not checkproxy(br):
+    return liburl, 'not logged in'
+
   # Redirect through UM proxy
-  if re.search('medscimonit', url, re.I):
+  if re.search('medscimonit', origurl, re.I):
     liburl = url
   else:
     try:
-      if re.search('^(?:http|https|ftp)//:', url):
+      if re.search('^(?:http|https|ftp)//:', origurl):
         prefix = 'http://'
       else:
         prefix = ''
-      liburl = 'http://proxy.lib.umich.edu/login?url=%s%s' % (prefix, url)
+      liburl = 'http://proxy.lib.umich.edu/login?url=%s%s' % (prefix, origurl)
       br.open(liburl)
     except:
-      liburl = url
+      liburl = origurl
       liberror = 'error on library proxy'
 
   return liburl, liberror
@@ -131,6 +154,9 @@ accessrule = {
 }
 
 def repdump(dtype, fun, br, verfun=None, ntry=5, wtime=5, nftime=600):
+  """
+  Download document from publisher
+  """
   
   url = br.geturl()
   ct = 0
@@ -223,7 +249,7 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
   pubopen = False
   
   # Get publisher link from DOI
-  #if not pubopen and doi:
+  print 'Checking DOI link...'
   if doi:
     doiurl = '%s/%s' % (doibase, doi)
     print 'Working on link %s...' % (doiurl)
@@ -235,6 +261,7 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
 
   # Get publisher link from PubMed
   if not url:
+    print 'Checking PubMed link...'
     try:
       url = retry(getpmlink, 5, 5, pmid, br)
     except:
@@ -244,7 +271,6 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
     if url:
       try:
         retry(br.open, 5, 5, url)
-        #pubopen = True
       except:
         status.append('invalid puburl from pubmed')
 
@@ -260,27 +286,26 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
   if os.path.exists(outpdf):
     os.remove(outpdf)
   
-  # 
+  # Redirect through UM Library proxy
   liburl, liberror = libproxy(br)
   if liberror:
     status.append(liberror)
 
-  # Get defaults
+  # Get default methods
   htmlmeth = htmldefault
   pdfmeth = pdfdefault
   
   # Get publisher rules
-  foundinfo = False
   for ji in journalinfo:
     if journalinfo[ji]['rule'](liburl):
       if 'htmlmeth' in journalinfo[ji]:
         htmlmeth = journalinfo[ji]['htmlmeth']
       if 'pdfmeth' in journalinfo[ji]:
         pdfmeth = journalinfo[ji]['pdfmeth']
-      foundinfo = True
       break
   
   # Download HTML
+  print 'Downloading HTML...'
   if outhtml and htmlmeth:
     try:
       repdump('html', htmlmeth, br, verfun=lambda br: not verpdf(br))
@@ -289,11 +314,11 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
       status.append('error on html: %s' % (repr(sys.exc_info()[1])))
       outhtml = None
   
-  # Refresh
+  # Return to starting URL
   br.open(liburl)
   
   # Download PDF
-  print 'Working on PDF...'
+  print 'Downloading PDF...'
   if outpdf and pdfmeth:
     try:
       repdump('pdf', pdfmeth, br, verfun=verpdf)
@@ -302,7 +327,8 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
       status.append('error on pdf: %s' % (repr(sys.exc_info()[1])))
       outpdf = None
   
+  # Get status
   status.reverse()
   if not status:
     status = ['success']
-  return '; '.join(status), url, outhtml, outpdf
+  return '; '.join(status), url, outhtml, outpdf, htmlmeth, pdfmeth

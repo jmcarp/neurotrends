@@ -11,6 +11,7 @@ from download.artscrape import *
 from acrobatch.acrobatch import *
 from trendpath import *
 from tagxtract import *
+from tagplot import *
 from logger import *
 
 ## Set up database
@@ -219,25 +220,29 @@ def artdump(art, br, overwrite=False):
     return
     
   # Clear fields
-  art.url = None
+  art.puburl = None
   art.htmlfile = None
   art.pdfrawfile = None
   art.pdfocr = None
   art.pdfdecrypt = None
   art.pdfdmethod = None
+  art.htmlmeth = None
+  art.pdfmeth = None
   art.htmlval = None
   art.pdfval = None
 
   try:
-    status, puburl, outhtml, outrawpdf = pmid2file(
+    status, puburl, outhtml, outrawpdf, htmlmeth, pdfmeth = pmid2file(
       art.pmid, br, outhtml=htmlfile, outpdf=pdfrawfile, doi=art.doi
     )
     art.scrapestatus = status
-    art.url = puburl
+    art.puburl = puburl
     if outhtml:
       art.htmlfile = os.path.split(outhtml)[-1]
     if outrawpdf:
       art.pdfrawfile = os.path.split(outrawpdf)[-1]
+    art.htmlmeth = htmlmeth.__name__
+    art.pdfmeth = pdfmeth.__name__
   except Exception as exc:
     print exc
     art.scrapestatus = exc.message
@@ -252,7 +257,8 @@ def buildart(art):
   # Check for article in database
   artobj = session.query(Article).\
     filter(Article.pmid==art['pmid']).first()
-
+  
+  # Return if complete
   if artobj and artobj.authors:
     print 'Article already complete.'
     return artobj
@@ -265,6 +271,7 @@ def buildart(art):
     else:
       return
 
+  # Parse PubMed XML
   art['soup'] = bs(art['xml'])
   art['info'] = artinfo(art)
 
@@ -310,6 +317,7 @@ def buildart(art):
   # Save changes
   session.commit()
 
+  # Return
   return artobj
 
 def batchaddauths():
@@ -403,6 +411,11 @@ def batchaddplace():
 def addplace(art, overwrite=False, delay=True, commit=True):
   """
   Add place information to an article
+  Arguments:
+    art (str/Article): PubMed ID or Article object
+    overwrite (bool): Overwrite existing files?
+    delay (bool): Wait between requests?
+    commit (bool): Save changes to database?
   """
 
   # Get article object
@@ -472,13 +485,12 @@ def batchxtract():
   br = getbr()
   umlogin(br, userfile=userfile)
 
-  artquery = session.query(Article).order_by(Article.pubyear.desc())
-  #artquery = session.query(Article).order_by(Article.pmid)
+  arts = session.query(Article).order_by(Article.pubyear.desc())
 
   ct = 1
-  nart = artquery.count()
+  nart = arts.count()
 
-  for art in artquery:
+  for art in arts:
     
     if art.pmid in xskip:
       print 'Skipping article %d...' % (ct)
