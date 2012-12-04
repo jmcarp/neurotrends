@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block script %}
+
+<script type="text/javascript">
+
+$(document).ready(function() {
+  $('.tail').hide();
+  $('.head').click(function() {
+    $(this).next('.tail').slideToggle();
+  });
+})
+
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+{% if narts %}
+
+  <h2>Results</h2>
+
+  Viewing results {{ offset + 1 }} - {{ lastview }} of {{ narts }}.
+  <br />
+  
+  {% if prevhref %}
+    <a href="/search?{{ prevhref }}">Previous</a>
+  {% else %}
+    Previous
+  {% endif %}
+  {% if nexthref %}
+    <a href="/search?{{ nexthref }}">Next</a>
+  {% else %}
+    Next
+  {% endif %}
+
+  {{ html|safe }}
+
+{% else %}
+  
+  <h2>No results found</h2>
+  <a href="/search">Try another query</a>
+
+{% endif %}
+
+{% endblock %}

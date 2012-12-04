@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<form action="/search">
+  <fieldset>
+    <legend>Search NeuroTrends</legend>
+    <label>PubMed ID</label>
+    <input type="text" name="pmid" />
+    <label>Document Object Identifier</label>
+    <input type="text" name="doi" />
+    <label>Article Title</label>
+    <input type="text" name="article_title" />
+    <label>Journal Title</label>
+    <input type="text" name="journal_title" />
+    <label>Publication Year</label>
+    <input type="text" name="pubyear" />
+    <label>Authors</label>
+    <input type="text" name="auths" />
+    <label>Attributes</label>
+    <input type="text" name="attribs" />
+    <br />
+    <button type="submit" class="btn">Submit</button>
+  </fieldset>
+</form>
+
+{% endblock %}
