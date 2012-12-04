@@ -1,6 +1,4 @@
 BeautifulSoup==3.2.1
-Cython==0.16
-EPD==7.3
 Examples==7.3
 Flask==0.9
 Flask-SQLAlchemy==0.16
@@ -83,8 +81,8 @@ nose==1.1.2
 numexpr==2.0.1
 numpy==1.6.1
 openpyxl==1.5.8
-pandas==0.7.3
-paramiko==1.7.7.1
+#pandas==0.7.3
+#paramiko==1.7.7.1
 pep8==1.0.1
 ply==3.4
 psutil==0.5.1
@@ -109,10 +107,10 @@ python-dateutil==1.5
 pytz==2011n
 pyzmq==2.1.11
 ## FIXME: could not find svn URL in dependency_links for this package:
-rpy2==2.2.6dev-20120903
-scikit-learn==0.11
-scikits.image==0.5.0
-scikits.timeseries==0.91.3
+#rpy2==2.2.6dev-20120903
+#scikit-learn==0.11
+#scikits.image==0.5.0
+#scikits.timeseries==0.91.3
 scimath==4.1.0
 scipy==0.10.1
 scons==2.0.1

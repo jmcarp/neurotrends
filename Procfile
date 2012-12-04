@@ -1,1 +1,1 @@
-web: python app.py
+web: python lib/neurotrends/app.py
