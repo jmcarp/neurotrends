@@ -2,7 +2,7 @@ BeautifulSoup==3.2.1
 #Examples==7.3
 Flask==0.9
 Flask-SQLAlchemy==0.16
-GDAL==1.8.1
+#GDAL==1.8.1
 Jinja2==2.6
 MDP==3.2
 MKL==10.3
