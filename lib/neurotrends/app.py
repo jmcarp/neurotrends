@@ -24,7 +24,7 @@ from api import *
 
 # Set up app
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % (dbfile)
+#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % (dbfile)
 
 # Set up database connection
 flaskdb = SQLAlchemy(app)
@@ -193,6 +193,6 @@ if __name__ == '__main__':
   if len(sys.argv) > 1 and sys.argv[1] == 'visible':
     print 'here @visible'
     runargs['host'] = '0.0.0.0'
-    runarts['port'] = int(os.environ.get('PORT', 5000))
+    runargs['port'] = int(os.environ.get('PORT', 5000))
   print 'here @run()'
   app.run(**runargs)

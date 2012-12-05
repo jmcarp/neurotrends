@@ -20,7 +20,11 @@ def getdb(sqltype='postgres', dbfile=dbfile):
   if sqltype == 'sqlite':
     db = create_engine('sqlite:///%s' % (dbfile))
   elif sqltype == 'postgres':
-    db = create_engine('postgresql+psycopg2://jmcarp@localhost/postgres')
+    heroku_url = os.enrivon.get('HEROKU_POSTGRESQL_BROWN_URL')
+    if heroku_url:
+      db = create_engine(heroku_url)
+    else:
+      db = create_engine('postgresql+psycopg2://jmcarp@localhost/postgres')
 
   # Create tables
   Base.metadata.create_all(db)
