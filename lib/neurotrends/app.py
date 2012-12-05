@@ -16,9 +16,7 @@ from flask import render_template
 from flask.ext.sqlalchemy import SQLAlchemy
 
 # Import database
-print 'importing database lol...'
 from trenddb import *
-print 'success importing database...'
 
 from api import *
 
@@ -39,7 +37,13 @@ def error404(e):
 @app.route('/')
 def home():
   
-  return render_template('home.html')
+  narts_int = session.query(Article).count()
+  nattribs_int = session.query(Attrib).count()
+  
+  narts = '{:,.0f}'.format(narts_int)
+  nattribs = '{:,.0f}'.format(nattribs_int)
+
+  return render_template('home.html', **locals())
 
 @app.route('/about')
 def about():

@@ -4,6 +4,14 @@
 
 <h2>Welcome to NeuroTrends!</h2>
 
-Handy bookmarklet: <a href="javascript:(function () {var pop = window.open('{{ url_for('searchquery', _external=True) }}?puburl=' + encodeURIComponent(location.href), 'NeuroTrends Lookup', 'width=800, height=600'); void(window.setTimeout('pop.focus()', 250));}())">NeuroTrends Lookup</a>
+<div>
+NeuroTrends is a platform for organizing information about methods used in brain imaging research. NeuroTrends includes information on {{ narts }} published studies and {{ nattribs }} different design and analysis strategies.
+</div>
+
+<br />
+
+<div>
+To get started, run a <a href="{{ url_for('searchquery') }}">search</a> or view the <a href="">gallery</a>. To access NeuroTrends from <a href="http://www.ncbi.nlm.nih.gov/pubmed">PubMed</a>, drag the <a href="javascript:(function () {var pop = window.open('{{ url_for('searchquery', _external=True) }}?puburl=' + encodeURIComponent(location.href), 'NeuroTrends Lookup', 'width=800, height=600'); void(window.setTimeout('pop.focus()', 250));}())">NeuroTrends Lookup</a> bookmarklet to your browser links bar. When viewing an article in PubMed, click on the bookmarklet to see methods information in NeuroTrends.
+</div>
 
 {% endblock %}

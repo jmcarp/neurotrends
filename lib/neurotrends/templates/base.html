@@ -49,8 +49,13 @@
     </div>
 
   <div class="container">
-    {% block content %}
-    {% endblock %}
+    <div class="row-fluid">
+      <div class="span1"></div>
+      <div class="span10">
+        {% block content %}
+        {% endblock %}
+      </div>
+    </div>
   </div>
 
 </body>
