@@ -186,8 +186,11 @@ def search(request):
   return narts, offset, artjson
 
 if __name__ == '__main__':
+  print 'here @__main__'
   runargs = {}
   if len(sys.argv) > 1 and sys.argv[1] == 'visible':
+    print 'here @visible'
     runargs['host'] = '0.0.0.0'
     runarts['port'] = int(os.environ.get('PORT', 5000))
+  print 'here @run()'
   app.run(**runargs)
