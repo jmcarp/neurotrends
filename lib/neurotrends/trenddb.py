@@ -23,7 +23,7 @@ def getdb(sqltype='postgres', dbfile=dbfile):
   if sqltype == 'sqlite':
     db = create_engine('sqlite:///%s' % (dbfile))
   elif sqltype == 'postgres':
-    heroku_url = os.enrivon.get('HEROKU_POSTGRESQL_BROWN_URL')
+    heroku_url = os.environ.get('HEROKU_POSTGRESQL_BROWN_URL')
     if heroku_url:
       db = create_engine(heroku_url)
     else:
