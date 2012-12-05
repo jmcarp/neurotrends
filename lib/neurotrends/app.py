@@ -16,7 +16,7 @@ from flask import render_template
 from flask.ext.sqlalchemy import SQLAlchemy
 
 # Import database
-print 'importing database...'
+print 'importing database lol...'
 from trenddb import *
 print 'success importing database...'
 
