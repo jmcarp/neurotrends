@@ -1,5 +1,36 @@
 {% extends "base.html" %}
 
+{% block style %}
+
+ul.root {
+  margin-left: 0em;
+}
+
+ul {
+  list-style-type: none;
+  margin-left: 1em;
+}
+
+li.stub {
+  background: url("/static/icon/dot.png") no-repeat left center;
+  padding-left: 1.5em;
+}
+
+.head {
+  background: none no-repeat left center;
+  padding-left: 1.5em;
+}
+
+.head.open {
+  background-image: url("/static/icon/minus.png");
+}
+
+.head.closed {
+  background-image: url("/static/icon/plus.png");
+}
+
+{% endblock %}
+
 {% block script %}
 
 <script type="text/javascript">
@@ -9,6 +40,11 @@ $(document).ready(function() {
   $('.head').click(function() {
     $(this).next('.tail').slideToggle();
   });
+  $('.head').addClass('closed');
+  // 
+  $('.head').click(function () {
+    $(this).toggleClass('closed open');
+  })
 })
 
 </script>

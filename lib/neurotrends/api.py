@@ -12,19 +12,23 @@ def thing2unicode(thing):
     return UnicodeDammit(thing).unicode
   return UnicodeDammit(str(thing)).unicode
 
-def data2html(data, indent=0, ichar='  '):
+def data2html(data, indent=0, level=0, ichar='  '):
   
   ichar = unicode(ichar)
+  if level == 0:
+    ulstr = '<ul class="root">'
+  else:
+    ulstr = '<ul>'
 
   if isinstance(data, list):
     if len(data) == 1:
-      return data2html(data[0], indent=indent)
+      return data2html(data[0], indent=indent, level=level+1)
     html = []
-    html.append(ichar * indent + '<ul>')
+    html.append(ichar * indent + ulstr)
     for idx in range(len(data)):
       item = data[idx]
-      html.append(ichar * (indent + 1) + '<li>')
-      html.extend(data2html(item, indent=indent+2))
+      html.append(ichar * (indent + 1) + '<li class="stub">')
+      html.extend(data2html(item, indent=indent+2, level=level+1))
       html.append(ichar * (indent + 1) + '</li>')
     html.append(ichar * indent + '</ul>')
     return html
@@ -35,21 +39,24 @@ def data2html(data, indent=0, ichar='  '):
     if len(data) == 1:
       key = data.keys()[0]
       html.append('%s' % (key))
-      html.extend(data2html(data[key], indent=indent+1))
+      html.extend(data2html(data[key], indent=indent+1, level=level+1))
       return html
 
-    html.append(ichar * indent + '<ul>')
+    html.append(ichar * indent + ulstr)
     for key in data:
       val = data[key]
       usediv = isinstance(val, dict) or isinstance(val, list)
-      html.append(ichar * (indent + 1) + '<li>')
+      if usediv:
+        html.append(ichar * (indent + 1) + '<li>')
+      else:
+        html.append(ichar * (indent + 1) + '<li class="stub">')
       if usediv:
         html.append(ichar * (indent + 1) + '<div class="head">')
       html.append(ichar * (indent + 2) + '%s' % (key))
       if usediv:
         html.append(ichar * (indent + 1) + '</div>')
         html.append(ichar * (indent + 1) + '<div class="tail">')
-      html.extend(data2html(val, indent=indent+2))
+      html.extend(data2html(val, indent=indent+2, level=level+1))
       if usediv:
         html.append(ichar * (indent + 1) + '</div>')
       html.append(ichar * (indent + 1) + '</li>')
