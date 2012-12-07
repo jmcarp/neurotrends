@@ -74,6 +74,14 @@ def show_gallery(gallery_name):
 
   return render_template('show_gallery.html', **locals())
 
+argmap = {
+  'pmid' : 'PubMed ID',
+  'attribs' : 'Attributes',
+  'auths' : 'Authors',
+  'article_title' : 'Article Title',
+  'journal_title' : 'Journal Title',
+}
+
 @app.route('/search')
 def searchquery():
 
@@ -85,6 +93,17 @@ def searchquery():
     args = dict([(key, args[key]) for key in args if args[key]])
     return redirect(url_for('searchquery', **args))
   
+  print_args = []
+  for key in args:
+    if key in argmap:
+      print_key = argmap[key]
+    else:
+      print_key = key
+    val = args[key]
+    val = ', '.join([field.lower().strip() for field in val.split(',')])
+    print_args.append('%s: %s' % (print_key, val))
+  query_str = '; '.join(print_args)
+
   narts, offset, results = search(request)
   
   lastview = offset + len(results)

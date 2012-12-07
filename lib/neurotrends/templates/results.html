@@ -57,6 +57,9 @@ $(document).ready(function() {
 
   <h2>Results</h2>
 
+  Query: {{ query_str }}
+  <br />
+
   Viewing results {{ offset + 1 }} - {{ lastview }} of {{ narts }}.
   <br />
   
@@ -70,6 +73,7 @@ $(document).ready(function() {
   {% else %}
     Next
   {% endif %}
+  <br />
 
   {{ html|safe }}
 
