@@ -6,7 +6,7 @@ import copy
 # Rules #
 #########
 
-delimptn = u'[\s\-]*?'
+delimptn = u'[\s\-,]*?'
 
 def tuprep(txt, nrep):
   return (txt,) * nrep

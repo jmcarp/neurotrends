@@ -41,7 +41,7 @@ def estfield(txt):
           context = getcontext(match=match, txt=txt)
           context = UnicodeDammit(context).unicode
           if minfield <= gfloat <= maxfield and gstr not in gstrs:
-            field.append((str(gfloat), context))
+            field.append((gstr, context))
             gstrs.append(gstr)
         except:
           pass

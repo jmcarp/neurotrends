@@ -175,6 +175,10 @@ class Place(Base):
   # Primary key
   id = Column(Integer, primary_key=True)
 
+  # Information from Wikipedia
+  wikiname = Column(String)
+  wikiloc = Column(String)
+
   # Original query
   orig = Column(String)
   norig = Column(Integer)

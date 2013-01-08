@@ -3,6 +3,100 @@ cat = 'analysis'
 # Import base 
 from base import *
 
+num_ptn = '\d*\.?\d+'
+mm_ptn = '(?:mm|milli%smet(?:er|re)s?)' % (delimptn)
+fw_ptn = '(?:fwhm|full%swidth)' % (delimptn)
+hm_ptn = '(?:fwhm|half%smax(?:imum)?)' % (delimptn)
+
+smooth_spatial_ptn = [
+  '(' + num_ptn + ')' + delimptn + mm_ptn + delimptn + fw_ptn,
+  """
+  %s%s
+  (?:of|at|(?:set%sto)|(?:equal%sto))?%s
+  (%s)%s%s
+  """ % (hm_ptn, delimptn, delimptn, delimptn, delimptn, num_ptn, delimptn, mm_ptn)
+]
+
+# S or Hz not followed by digits, dashes, or udashes
+# To avoid s-1 units
+hpf_unit_ptn = u'(?:s|hz)(?![\d\-\u2212])'
+highpass_filter_ptn = [
+  """
+  high%spass%sfilter(?:ed|ing)?%s
+  (?:with|using)?%s(?:an?)?%s
+  (?:cut%soff)?%s(?:frequency|period)?%s(?:time%sconstant)?%s
+  (?:of|at|with)?%s
+  (%s)%s(%s)
+  """ % (delimrep(11) + (num_ptn, delimptn, hpf_unit_ptn,)),
+  """
+  (%s)%s(%s)%s
+  high%spass%sfilter
+  """ % (num_ptn, delimptn, hpf_unit_ptn, delimptn, delimptn, delimptn),
+]
+
+def est_smooth_kernel(txt):
+  
+  # Initialize FWHM
+  fwhm = []
+
+  ctxt = re.sub('[():=]', '', txt)
+
+  for ptn in smooth_spatial_ptn:
+
+    matches = re.finditer(ptn, ctxt, flags=re.VERBOSE)
+
+    if not matches:
+      continue
+
+    for match in matches:
+
+      try:
+        num_orig = match.groups()[0]
+        sixmatch = re.search('(\d+?)6(\d+?)6(\d+)', num_orig)
+        if sixmatch:
+          if len(set(sixmatch.groups())) == 1:
+            num_orig = sixmatch.groups()[-1]
+        num_float = float(num_orig)
+        if num_float > 30:
+          continue
+        num_str = str(num_float)
+        context = getcontext(match=match, txt=ctxt)
+        context = UnicodeDammit(context).unicode
+        fwhm.append((num_str, context))
+      except:
+        pass
+
+  return fwhm
+
+def est_highpass_cutoff(txt):
+  
+  hpf = []
+  
+  ctxt = re.sub('[():=]', '', txt)
+
+  for ptn in highpass_filter_ptn:
+
+    matches = re.finditer(ptn, ctxt, re.VERBOSE)
+
+    if not matches:
+      continue
+    
+    for match in matches:
+
+      try:
+        num_float = float(match.groups()[0])
+        units = match.groups()[1]
+        if units == 'hz':
+          num_float = 1 / num_float
+        num_str = str(num_float)
+        context = getcontext(match=match, txt=ctxt)
+        context = UnicodeDammit(context).unicode
+        hpf.append((num_str, context))
+      except:
+        pass
+
+  return hpf
+
 # Check slice-timing correction
 priptn_stc = [
   'slice',
@@ -196,6 +290,14 @@ tags['spatsmoo'] = [
   'gaussian%sblur' % delimrep(1),
 ]
 
+tags['smooth_kernel'] = [
+  est_smooth_kernel,
+]
+
+tags['highpass_cutoff'] = [
+  est_highpass_cutoff,
+]
+
 tags['motreg'] = [
   '(?:motion|movement)%sregress' % delimrep(1),
   '(?:motion|movement)%sparameter%sregress' % delimrep(2),
@@ -230,8 +332,8 @@ tags['autocorr'] = [
 ]
 
 tags['estsmoo'] = [
-    '3dfwhm',                   # 3dFWHM [AFNI]
-    'smoothness.{,15}estimat',
-    'estimat(?:e|ed|ing|ion)%s(?:of)?%s(?:the)?smoothness' % delimrep(2),
+  '3dfwhm',                   # 3dFWHM [AFNI]
+  'smoothness.{,15}estimat',
+  'estimat(?:e|ed|ing|ion)%s(?:of)?%s(?:the)?smoothness' % delimrep(2),
 ]
 

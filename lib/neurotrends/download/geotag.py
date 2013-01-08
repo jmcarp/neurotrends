@@ -5,10 +5,24 @@ import re
 import time
 import urllib
 
+import Queue
+
+from BeautifulSoup import UnicodeDammit
+
+import HTMLParser
+parser = HTMLParser.HTMLParser()
+
+from mechtools import *
+
 # Set up Google Maps
 from googlemaps import GoogleMaps
 from googlemaps import GoogleMapsError
 gmaps = GoogleMaps()
+
+# From http://stackoverflow.com/questions/517923/what-is-the-best-way-to-remove-accents-in-a-python-unicode-string
+import unicodedata
+def strip_accents(s):
+   return ''.join((c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn'))
 
 # Time between queries
 waittime = 35
@@ -30,85 +44,262 @@ mailre = re.compile(
     ')+' +
   ')', re.I)
 
-inststr = ['university', 'college']
-institutes = ['university', 'college', 'hospital']
+inststr = ['university', 'université', 'college']
+institutes = [
+  'university', 'college', 'hospital', 
+  'inserm', 'laboratory', 'laboratoire',
+]
 instptn = [re.compile(ptn, re.I) for ptn in inststr]
 
 depts = [
   'journalism',
   'communication',
-  'psychology',
-  'neuroscience',
+  'inserm',
+  'information science',
+  'computation',
+  'speech',
 ]
 
 wikibase = 'http://en.wikipedia.org/wiki'
 wikinotfound = 'wikipedia does not have an article with this exact name'
-wikinocaps = ['of', 'for',]
+wikidisamb = '<b>.*?</b> may (?:also )?refer to'
+wikinocaps = ['of', 'for', 'at',]
 wikiskipchar = [u'\xa0']
 wikiskipptn = '[' + ''.join(wikiskipchar) + ']*'
 
-# Adapted from http://stackoverflow.com/questions/10852955/python-batch-convert-gps-positions-to-lat-lon-decimals
-direct_mult = {'N':-1, 'S':1, 'E': -1, 'W':1}
-def get_coords(old):
-    new = old.replace(u'\xb0',' ')\
-      .replace(u'\u2032',' ')\
-      .replace(u'\u2033',' ')
-    new = new.split()
-    new_dir = new.pop()
-    new = [float(num) for num in new]
-    new.extend([0, 0, 0])
-    return (new[0] + new[1] / 60.0 + new[2] / 3600.0) * direct_mult[new_dir]
-
 def anymatch(patterns, text, flags=re.I):
-  return any([re.search(pattern, text, flags) for pattern in patterns])
+  for pattern in patterns:
+    if type(pattern) == str:
+      if re.search(pattern, text, flags):
+        return True
+    elif type(pattern) == type(re.compile('')):
+      if pattern.search(text):
+        return True
+  return False
 
-def wikiparse(query, verbose=False):
+def statelist():
   
+  br = getbr()
+  br.open('http://en.wikipedia.org/wiki/List_of_sovereign_states')
+  html, soup = br2docs(br)
+
+  statespan = soup.find(
+    'span',
+    {'id' : 'List_of_states'}
+  )
+
+  statetable = statespan.findNext('table')
+  
+  staterows = statetable.findAll('tr')
+
+  states = []
+
+  for row in staterows[1:]:
+    
+    col = row.find('td')
+    if col.find(style='display:none'):
+      continue
+    coltext = col.text
+    if re.search(u'\u2192', coltext):
+      continue
+    coltext = coltext.replace('&#160;', '')
+    coltext = re.sub('\[.*?\]', '', coltext)
+    colstates = [state.strip() for state in coltext.split(u'\u2013')]
+    states.extend(colstates)
+  
+  return states
+
+def nihlist():
+  
+  br = getbr()
+  br.open('http://en.wikipedia.org/wiki/National_Institutes_of_Health')
+  html, soup = br2docs(br)
+
+  instspan = soup.find(
+    'span',
+    {'id' : 'Institutes'}
+  )
+  
+  insttable = instspan.findNext('table')
+
+  instrows = insttable.findAll('tr')
+
+  instlist = []
+  for row in instrows[1:]:
+    instcols = row.findAll('td')
+    instlist.append({
+      'full' : instcols[0].text,
+      'abbr' : instcols[1].text,
+    })
+
+  return instlist
+
+states = statelist()
+
+nih_inst = nihlist()
+nih_ptn = []
+for inst in nih_inst:
+  full = inst['full']
+  full = re.sub('Institute', 'Institutes?', full, flags=re.I)
+  full = re.sub('Disorder', 'Disorders?', full, flags=re.I)
+  nih_ptn.append(re.compile(full, re.I))
+  nih_ptn.append(re.compile('(?<!\w)' + inst['abbr'] + '(?!\w)'))
+
+non_places = [
+  'general hospital', 'teaching hospital', 'institute of medicine', 
+  'college of medicine', 'medical school',
+]
+
+wiki_variants = [
+  ('-', ' '),
+  ('\sat\s', ' '),
+  ('\(.*?\)', ''),
+  ('(?<=\s)(?:and|&amp;)(?=\s).*', ''),
+]
+
+contingent_skip_patterns = [
+  'division',
+  '(?<!\w)unit(?!\w)',
+  '(?<!medical )(?<!health )center',
+]
+
+def wikiparse(query, queue=Queue.Queue(), recurse=False, verbose=True):
+  
+  wikiinfo = {}
+  
+  # Add variants to queue
+  for variant in wiki_variants:
+    if re.search(variant[0], query):
+      queue.put(re.sub(variant[0], variant[1], query))
+
   split_query = geoprep(query)
+  wikiinfo['orig'] = ', '.join(split_query)
+  wikiinfo['norig'] = len(split_query)
+  
   clean_query = []
   for part in split_query:
-    if anymatch(['center'], part) and anymatch(institutes, query):
+    if anymatch(contingent_skip_patterns, part) and \
+        anymatch(institutes, query):
       continue
     if anymatch(depts, part):
       continue
+    if any([state.lower() == part.lower() for state in states]):
+      continue
     clean_query.append(part)
-
+  
+  # Search until query empty
   while clean_query:
-    _ = clean_query.pop()
     join_query = ', '.join(clean_query)
+    if any([state.lower() == join_query.lower() for state in states]):
+      break
+    if any([join_query.lower() == np for np in non_places]):
+      break
     if verbose:
       print 'Searching Wikipedia for %s...' % (join_query)
-    wikiinfo = wikilookup(join_query)
-    if wikiinfo:
-      return join_query, wikiinfo
-
-  return
-
-def wikilookup(query):
+    placeinfo = wiki2place(join_query)
+    if placeinfo:
+      wikiinfo['final'] = join_query
+      wikiinfo['nfinal'] = len(clean_query)
+      if 'head' in placeinfo and \
+          placeinfo['head'] and \
+          any([placeinfo['head'].lower() == np for np in non_places]):
+        return wikiinfo
+      wikiinfo.update(placeinfo)
+      return wikiinfo
+    # Drop last part
+    _ = clean_query.pop()
   
+  # Redirect to NIH
+  if not recurse and anymatch(nih_ptn, query):
+    return wikiparse('National Institutes of Health', 
+      recurse=True, verbose=verbose)
+  
+  # Try next item from queue
+  if queue.qsize():
+    return wikiparse(queue.get(), queue, verbose=verbose)
+
+  # Fail
+  return wikiinfo
+
+def wiki2place(query):
+  
+  placeinfo = {}
+  placeinfo['head'] = None
+  placeinfo['lat'], placeinfo['lon'] = (None, None)
+
   # Capitalize query terms
   query_parts = query.lower().split(' ')
   for partidx in range(len(query_parts)):
     part = query_parts[partidx]
     if part not in wikinocaps:
       query_parts[partidx] = part.capitalize()
-  print 'hi', query_parts
+  
   query_cap = ' '.join(query_parts)
+  query_cap = UnicodeDammit(query_cap).unicode
+  query_cap = strip_accents(query_cap)
 
   # Load Wikipedia
-  wikiurl = '%s/%s' % (wikibase, urllib.quote(query_cap))
-  print wikiurl
+  br = getbr()
   try:
+    wikiurl = '%s/%s' % (wikibase, urllib.quote(query_cap))
     br.open(wikiurl)
   except:
-    return
-
+    return {}
+  
   # Read browser
   html, soup = br2docs(br)
 
+  if not soup:
+    return {}
+
   # Quit if no results
-  if re.search(wikinotfound, html, re.I):
-    return
+  if re.search(wikinotfound, html, re.I) or \
+     re.search(wikidisamb, html, re.I):
+    return {}
+  
+  # Quit if city
+  city_ptns = [
+    # Places
+    'category:countries',
+    'category:villages',
+    'category:streets',
+    'category:\w+_arrondissement',
+    'category:states_of',
+    'category:provinces',
+    'category:cities_in',
+    'category:capitals_in',
+    'category:communes_of',
+    'category:prefectures_of',
+    'category:neighborhoods',
+    'category:populated',
+    # Departments
+    'category:psychiatry',
+    'category:social_sciences',
+    'category:subjects_taught',
+    'category:medical_specialties',
+    'category:public_university_system',
+    # Miscellaneous
+    'category:school_types',
+    'category:greek_loanwords',
+    # Scientific terms
+    'category:biology',
+    'category:branches_of_biology',
+    'category:chemistry',
+    'category:biochemistry',
+    'category:molecular',
+    'category:cognition',
+    'category:human',
+  ]
+  if anymatch(city_ptns, html):
+    return {}
+
+  # Get heading text
+  headh1 = soup.find(
+    'h1',
+    {'id' : re.compile('firstheading', re.I)}
+  )
+  if headh1:
+    placeinfo['head'] = headh1.text
   
   # Get location description
   loclist = []
@@ -124,23 +315,25 @@ def wikilookup(query):
         loctxt = loctxt.strip()
         if loctxt:
           loclist.append(loctxt)
-  loc = ', '.join(loclist)
+  placeinfo['loc'] = ', '.join(loclist)
   
   # Get coordinates
-  latnum, lonnum = (0, 0)
   geospan = soup.find(
     'span',
-    {'class' : re.compile('geo-dec')}
+    {'class' : re.compile('^geo$')}
   )
-  if geospan:
-    geotext = geospan.string
-    geocoord = geotext.split(' ')
-    if len(geocoord) == 2:
-      lat, lon = geocoord
-      latnum = get_coords(lat)
-      lonnum = get_coords(lon)
   
-  return loc, latnum, lonnum
+  if geospan:
+    geostr = geospan.string
+    geosplit = geostr.split(';')
+    if len(geosplit) == 2:
+      try:
+        placeinfo['lat'] = float(geosplit[0].strip())
+        placeinfo['lon'] = float(geosplit[1].strip())
+      except:
+        pass
+  
+  return placeinfo
 
 def geoprep(query):
 
@@ -160,19 +353,27 @@ def geoprep(query):
       break
 
   # Drop departments
-  splitquery = [sq for sq in splitquery if not re.search('department', sq, re.I)]
+  clean_query = []
+  for part in splitquery:
+    if not re.search('department|division', part, re.I):
+      clean_query.append(part)
+    elif anymatch(instptn, part):
+      clean_query.append(part)
+  #splitquery = [sq for sq in splitquery if not re.search('department|division', sq, re.I)]
 
   # Return
-  return splitquery
+  return clean_query
+  #return splitquery
 
-def geotag(splitquery, delay=False):
+def geotag(splitquery, delay=False, verbose=True):
   
   # Initialize results
+  geoinfo = {}
   lres = None
-  lon = None; lat = None
+  geoinfo['lon'], geoinfo['lat'] = (None, None)
 
-  orig = ', '.join(splitquery)
-  norig = len(splitquery)
+  geoinfo['orig'] = ', '.join(splitquery)
+  geoinfo['norig'] = len(splitquery)
 
   while True:
     
@@ -187,12 +388,14 @@ def geotag(splitquery, delay=False):
         time.sleep(waittime)
 
       # Send Google Maps query
+      if verbose:
+        print 'Searching Google Maps for %s...' % (tmpquery)
       lloc = gmaps.local_search(tmpquery)
 
       # Parse query results
       lres = lloc['responseData']['results'][0]
-      lat = lres['lat']
-      lon = lres['lng']
+      geoinfo['lat'] = float(lres['lat'])
+      geoinfo['lon'] = float(lres['lng'])
 
       # Break if success
       break
@@ -221,7 +424,9 @@ def geotag(splitquery, delay=False):
       # No terms remaining
       break
 
+  # Get final query
+  geoinfo['final'] = tmpquery
+  geoinfo['nfinal'] = len(splitquery)
+  
   # Return
-  final = tmpquery
-  nfinal = len(splitquery)
-  return lon, lat, orig, norig, final, nfinal
+  return geoinfo

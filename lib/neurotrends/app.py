@@ -104,15 +104,7 @@ def searchquery():
     print_args.append('%s: %s' % (print_key, val))
   query_str = '; '.join(print_args)
 
-  narts, offset, results = search(request)
-  
-  lastview = offset + len(results)
-  if offset > 0:
-    args['offset'] = max(0, offset - 10)
-    prevhref = urllib.urlencode(args)
-  if lastview < narts:
-    args['offset'] = offset + 10
-    nexthref = urllib.urlencode(args)
+  narts, offset, prevhref, nexthref, results = search(request, to_dict=True)
   
   html = data2html(results)
   html = '\n'.join(html)
@@ -124,14 +116,25 @@ def searchquery():
 @app.route('/api')
 def apiquery():
 
-  ## Get results
-  #narts, offset, results = search(request)
-  #
-  ## Return JSON
-  #return json.dumps(results)
-  return render_template('api_preview.html')
+  # Get results
+  narts, offset, prevhref, nexthref, results = search(request, to_dict=False)
 
-def search(request):
+  summary = {
+    'count' : narts,
+    'offset' : offset,
+    'articles' : results,
+  }
+  if prevhref:
+    summary['prev'] = prevhref
+  if nexthref:
+    summary['next'] = nexthref
+  
+  # Return JSON
+  return json.dumps(summary)
+
+  #return render_template('api_preview.html')
+
+def search(request, to_dict):
 
   # Copy arguments to dict
   if hasattr(request, 'args'):
@@ -143,6 +146,7 @@ def search(request):
   # Initialize Article query
   arts = session.query(Article).order_by(Article.pubyear)
   
+  # Filter by PMID
   if 'puburl' in args:
     puburl = args['puburl']
     pubreg = re.search(pubptn, puburl, re.I)
@@ -197,25 +201,40 @@ def search(request):
   # Retrieve results
   arts = arts.all()
 
-  # 
-  artdict = collections.OrderedDict()
-  for artidx in range(len(arts)):
-    art = arts[artidx]
-    key = 'Article %s: %s' % (artidx + offset + 1, art.atitle)
-    artdict[key] = art
+  # Generate prev/next links
+  lastview = offset + len(arts)
+  if offset > 0:
+    args['offset'] = max(0, offset - 10)
+    prevhref = url_for('apiquery', _external=True, **args)
+  else:
+    prevhref = ''
+  if lastview < narts:
+    args['offset'] = offset + 10
+    nexthref = url_for('apiquery', _external=True, **args)
+  else:
+    nexthref = ''
+  
+  if to_dict:
+    # 
+    artdict = collections.OrderedDict()
+    for artidx in range(len(arts)):
+      art = arts[artidx]
+      key = 'Article %s: %s' % (artidx + offset + 1, art.atitle)
+      artdict[key] = art
 
-  # Convert to dict
-  artjson = sqla2dict(artdict)
+    # Convert to dict
+    artjson = sqla2dict(artdict)
+
+  else:
+
+    artjson = sqla2dict(arts)
   
   # Return
-  return narts, offset, artjson
+  return narts, offset, prevhref, nexthref, artjson
 
 if __name__ == '__main__':
-  print 'here @__main__'
   runargs = {}
   if len(sys.argv) > 1 and sys.argv[1] == 'visible':
-    print 'here @visible'
     runargs['host'] = '0.0.0.0'
     runargs['port'] = int(os.environ.get('PORT', 5000))
-  print 'here @run()'
   app.run(**runargs)

@@ -50,6 +50,13 @@ repxcept = {
 # Functions #
 #############
 
+def batchclearauths():
+  
+  session.query(Author).delete()
+  session.execute('DELETE from articles_authors')
+
+  session.commit()
+
 def batchclearattrib(usereport=False):
   """
   Clear all Attributes, Fields, and Snippets from database
@@ -59,14 +66,15 @@ def batchclearattrib(usereport=False):
   
   if not usereport:
 
-    # Clear tables
-    session.query(Attrib).delete()
-    session.query(Field).delete()
-    session.query(Snippet).delete()
    
-    # Hack to clear association tables
-    session.execute('DELETE from articles_attribs')
-    session.execute('DELETE from attribs_fields')
+    # Clear association tables
+    session.execute('DELETE FROM attribs_fields')
+    session.execute('DELETE FROM articles_attribs')
+
+    # Clear tables
+    session.execute('DELETE FROM fields')
+    session.execute('DELETE FROM attribs')
+    session.execute('DELETE FROM snippets')
   
   else:
     
@@ -229,6 +237,14 @@ def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
       
       # Convert to plain text
       html = ''.join(open(htmlfile, 'r').readlines())
+      
+      # Pad TDs
+      html = re.sub(
+        '<td(.*?)>(.*?)</td>', 
+        '<td\\1> \\2 </td>', 
+        html, 
+        flags=re.I
+      )
       
       # 
       if raw:

@@ -310,6 +310,7 @@ def buildart(art):
     print 'Adding entry to database...'
     artobj = Article(**art)
     session.add(artobj)
+    session.commit()
 
   # Add authors
   addauths(artobj)
@@ -329,8 +330,12 @@ def batchaddauths():
   arts = session.query(Article).order_by(Article.pmid)
 
   # Add authors
-  for art in arts:
+  for artidx in range(arts.count()):
+    art = arts[artidx]
+    print 'Working on article #%s, PMID %s...' % (artidx, art.pmid)
     addauths(art)
+    if artidx and artidx % 50 == 0:
+      session.commit()
 
   # Save changes
   session.commit()
@@ -356,7 +361,7 @@ def addauths(art, commit=False):
     return
 
   for auth in info['auths']:
-
+    
     last = auth[0]
     frst = auth[1]
 
@@ -365,11 +370,11 @@ def addauths(art, commit=False):
       # Clean up first name
       frst = re.sub('\-', ' ', frst)
       frst = re.sub('[^A-Z\s]', '', frst)
-
+      
       # Get author object
       authobj = session.query(Author).\
         filter(and_(Author.lastname==last, Author.frstname==frst)).first()
-
+      
       # Create if it doesn't exist
       if not authobj:
         authobj = Author(lastname=last, frstname=frst)
@@ -441,27 +446,77 @@ def addplace(art, overwrite=False, delay=True, commit=True):
   # Check for existing place object
   qplace = session.query(Place).filter(Place.orig==prepquery)
 
-  if qplace.count() > 0:
+  #if qplace.count() > 0:
+  #  placeobj = qplace.first()
+  #else:
+  #  placeobj = Place()
+  
+  placeobj = None
+
+  #if qplace.count() == 0 or overwrite:
+  if qplace.count() == 1 and not overwrite:
+
     placeobj = qplace.first()
+
   else:
-    placeobj = Place()
+    
+    # Get place info from Wikipedia
+    locinfo = wikiparse(prepquery)
 
-  if qplace.count() == 0 or overwrite:
+    if 'lat' in locinfo and locinfo['lat'] or \
+       'lon' in locinfo and locinfo['lon']:
+      # Check for existing Place
+      if 'head' in locinfo:
+        qplace = session.query(Place).filter(Place.wikiname == locinfo['head'])
+    else:
+      locinfo = geotag(prepsplit, delay=delay)
+    #if 'lat' not in locinfo or not locinfo['lat'] or \
+    #   'lon' not in locinfo or not locinfo['lon']:
+    #  locinfo = geotag([locinfo['head']])
+    #  #if 'head' in locinfo and locinfo['head']:
+    #  #  gminfo = geotag([locinfo['head']])
+    #  #  if gminfo['lat'] and gminfo['lon']:
+    #  #    locinfo.update(gminfo)
+    #  #if 'head' not in locinfo or not (locinfo['lat'] and locinfo['lon']):
+    #  #  gminfo = geotag(prepsplit, delay=delay)
+    #  #  if gminfo['lat'] and gminfo['lon']:
+    #  #    locinfo.update(gminfo)
+    
+    ## Check for existing Place
+    #if 'head' in locinfo:
+    #  qplace = session.query(Place).filter(Place.wikiname == locinfo['head'])
 
-    # Get coordinates
-    lon, lat, orig, norig, final, nfinal = geotag(prepsplit, delay=delay)
+    if qplace.count() == 1 and not overwrite:
 
-    if lon and lat:
+      placeobj = qplace.first()
 
-      orig = UnicodeDammit(orig).unicode
-      final = UnicodeDammit(final).unicode
+    else:
+      
+      # Quit if no coordinates
+      if 'lat' not in locinfo or not locinfo['lat'] or \
+         'lon' not in locinfo or not locinfo['lon']:
+        return
 
-      placeobj.lon = lon
-      placeobj.lat = lat
-      placeobj.orig = orig
-      placeobj.norig = norig
-      placeobj.final = final
-      placeobj.nfinal = nfinal
+      placeobj = Place()
+
+      # Add Wikipedia info
+      if 'head' in locinfo:
+        placeobj.wikiname = locinfo['head']
+      if 'loc' in locinfo:
+        placeobj.wikiloc = locinfo['loc']
+
+      if 'lat' in locinfo and locinfo['lat'] and \
+         'lon' in locinfo and locinfo['lon']:
+
+        orig = UnicodeDammit(locinfo['orig']).unicode
+        final = UnicodeDammit(locinfo['final']).unicode
+
+        placeobj.lon = locinfo['lon']
+        placeobj.lat = locinfo['lat']
+        placeobj.orig = orig
+        placeobj.norig = locinfo['norig']
+        placeobj.final = final
+        placeobj.nfinal = locinfo['nfinal']
 
   # Attach to article object
   if placeobj.lon and placeobj.lat:
