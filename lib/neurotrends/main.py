@@ -13,6 +13,7 @@ from trendpath import *
 from tagxtract import *
 from tagplot import *
 from logger import *
+from download.pmid_doi import pmid_doi
 
 ## Set up database
 #session = getdb()
@@ -20,6 +21,20 @@ from logger import *
 # Password files
 userfile = '/Users/jmcarp/private/ump'
 mailfile = '/Users/jmcarp/private/gmp'
+
+def add_doi_to_all():
+  
+  arts = session.query(Article).filter(Article.doi == None)
+
+  for art in arts:
+
+    info = pmid_doi({'pmid' : art.pmid})
+    if 'doi' in info:
+      art.doi = info['doi']
+    else:
+      print 'No DOI found for PMID %s...' % (art.pmid)
+
+  session.commit()
 
 def getartpath(art, attr, base):
   
@@ -30,12 +45,19 @@ def getartpath(art, attr, base):
   if os.path.exists(path):
     return path
 
-pathmap = {
-  'htmlfile' : htmldir,
-  'chtmlfile' : chtmldir,
-  'pdfrawfile' : pdfdir,
-  'pdftxtfile' : pdftxtdir,
-}
+#pathmap = {
+#  'html' : htmldir,
+#  'chtml' : chtmldir,
+#  'pdfraw' : pdfdir,
+#  'pdftxt' : pdftxtdir,
+#  'pmc' : pmcdir,
+#}
+#pathmap = {
+#  'htmlfile' : htmldir,
+#  'chtmlfile' : chtmldir,
+#  'pdfrawfile' : pdfdir,
+#  'pdftxtfile' : pdftxtdir,
+#}
 
 def pmidset(op):
   """
@@ -183,6 +205,16 @@ def batchdump(overwrite=False):
 
     ct += 1
 
+def short_name(full_path):
+  return os.path.split(full_path)[-1]
+
+def file_path(pmid, file_type, file_info):
+  return '%s/%s.%s' % (
+    file_info[file_type]['base_path'],
+    pmid,
+    file_info[file_type]['file_ext']
+  )
+
 def artdump(art, br, overwrite=False):
   """
   Download HTML and PDF documents for an article.
@@ -192,29 +224,32 @@ def artdump(art, br, overwrite=False):
   art = toart(art)
 
   # 
-  htmlfile = '%s/html/%s.html' % (dumpdir, art.pmid)
-  chtmlfile = '%s/chtml/%s.shelf' % (dumpdir, art.pmid)
-  pdfrawfile = '%s/pdf/%s.pdf' % (dumpdir, art.pmid)
+  out_files = {}
+  for file_type in file_dirs:
+    out_files[file_type] = file_path(art.pmid, file_type, file_dirs)
+    #file_dir = file_dirs[file_type]
+    #out_files[file_type] = '%s/%s.%s' % \
+    #  (file_dir['base_path'], art.pmid, file_dir['file_ext'])
   
   # Return if article complete
-  if \
-      os.path.exists(htmlfile) \
-      and os.path.exists(pdfrawfile) \
+  if os.path.exists(out_files['html']) \
+      and os.path.exists(out_files['pdfraw']) \
+      and os.path.exists(out_files['pmc']) \
       and not overwrite:
-    art.htmlfile = os.path.split(htmlfile)[-1]
-    art.pdfrawfile = os.path.split(pdfrawfile)[-1]
+    art.htmlfile = short_name(out_files['html'])
+    art.pdfrawfile = short_name(out_files['pdfraw'])
+    art.pmcfile = short_name(out_files['pmc'])
     print 'Download already complete'
     session.commit()
     return
 
   # Return if PDF complete and HTML terminally unavailable
-  if \
-      os.path.exists(pdfrawfile) \
+  if os.path.exists(out_files['pdfraw']) \
       and art.scrapestatus \
       and re.search('no html full text', art.scrapestatus) \
       and not overwrite:
     art.htmlfile = None
-    art.pdfrawfile = os.path.split(pdfrawfile)[-1]
+    art.pdfrawfile = short_name(out_files['pdfraw'])
     print 'Download already complete; HTML not available'
     session.commit()
     return
@@ -223,6 +258,7 @@ def artdump(art, br, overwrite=False):
   art.puburl = None
   art.htmlfile = None
   art.pdfrawfile = None
+  art.pmcfile = None
   art.pdfocr = None
   art.pdfdecrypt = None
   art.pdfdmethod = None
@@ -232,18 +268,23 @@ def artdump(art, br, overwrite=False):
   art.pdfval = None
 
   try:
-    status, puburl, outhtml, outrawpdf, htmlmeth, pdfmeth = pmid2file(
-      art.pmid, br, outhtml=htmlfile, outpdf=pdfrawfile, doi=art.doi
+
+    status, puburl, out_files, scrape_methods = pmid2file(
+      art.pmid, br, out_files, doi=art.doi
     )
     art.scrapestatus = status
     art.puburl = puburl
-    if outhtml:
-      art.htmlfile = os.path.split(outhtml)[-1]
-    if outrawpdf:
-      art.pdfrawfile = os.path.split(outrawpdf)[-1]
-    art.htmlmeth = htmlmeth.__name__
-    art.pdfmeth = pdfmeth.__name__
+    if out_files['html']:
+      art.htmlfile = short_name(out_files['html'])
+    if out_files['pdfraw']:
+      art.pdfrawfile = short_name(out_files['pdfraw'])
+    if out_files['pmc']:
+      art.pmcfile = short_name(out_files['pmc'])
+    art.htmlmeth = scrape_methods['html'].__name__
+    art.pdfmeth = scrape_methods['pdfraw'].__name__
+
   except Exception as exc:
+
     print exc
     art.scrapestatus = exc.message
     
@@ -555,9 +596,9 @@ def batchxtract():
     ct += 1
 
 def artxtract(art, br=None, commit=True, totiff=False, overwrite=False):
-  """
+  '''
   Extract PDF text from an article
-  """
+  '''
   
   # Stop if no PDF in record
   if not art.pdfrawfile:
@@ -567,7 +608,9 @@ def artxtract(art, br=None, commit=True, totiff=False, overwrite=False):
     return
 
   # Retry download if PDF missing
-  if not os.path.exists('%s/%s' % (pdfdir, art.pdfrawfile)):
+  pdfrawfile = file_path(art.pmid, 'pdfraw', file_dirs)
+  #if not os.path.exists('%s/%s' % (pdfdir, art.pdfrawfile)):
+  if not os.path.exists(pdfrawfile):
     print 'Retrying download...'
     artdump(art.pmid, br)
     art = toart(art)
@@ -576,7 +619,8 @@ def artxtract(art, br=None, commit=True, totiff=False, overwrite=False):
 
   print 'Working on article %s...' % (art.pmid)
 
-  pdftxtfile = '%s/pdftxt/%s.shelf' % (dumpdir, art.pmid)
+  #pdftxtfile = '%s/pdftxt/%s.shelf' % (dumpdir, art.pmid)
+  pdftxtfile = file_path(art.pmid, 'pdftxt', file_dirs)
   if os.path.exists(pdftxtfile):
     shelf = shelve.open(pdftxtfile)
     if isinstance(shelf, shelve.Shelf) \
@@ -589,7 +633,8 @@ def artxtract(art, br=None, commit=True, totiff=False, overwrite=False):
       os.remove(pdftxtfile)
 
   # Read PDF
-  pdfinfo = pdfread('%s/%s' % (pdfdir, art.pdfrawfile), totiff=totiff)
+  #pdfinfo = pdfread('%s/%s' % (pdfdir, art.pdfrawfile), totiff=totiff)
+  pdfinfo = pdfread(pdfrawfile, totiff=totiff)
   if not pdfinfo:
     return
 

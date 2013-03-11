@@ -13,22 +13,15 @@ figdir = '%s/fig' % (homedir)
 # Base path to downloaded files
 dumpdir = '/Users/jmcarp/Documents/artdump'
 
-# Path to HTML files
-htmldir = '%s/html' % (dumpdir)
-
-# Path to cleaned HTML files
-chtmldir = '%s/chtml' % (dumpdir)
-
-# Path to raw PDF files
-pdfdir = '%s/pdf' % (dumpdir)
-
-# Path to extracted PDF files
-pdftxtdir = '%s/pdftxt' % (dumpdir)
-
-# Check directories
-dirptn = re.compile('\w+dir$')
-loctmp = locals().keys()
-for dirname in [loc for loc in loctmp if dirptn.search(loc)]:
-  trenddir = locals()[dirname]
-  if not os.path.exists(trenddir):
-    os.mkdir(trenddir)
+file_dirs = {
+  'html' : { 'file_ext' : 'html' },
+  'chtml' : { 'file_ext' : 'shelf' },
+  'pdfraw' : { 'file_ext' : 'pdf' },
+  'pdftxt' : { 'file_ext' : 'txt' },
+  'pmc' : { 'file_ext' : 'html' },
+}
+for file_type in file_dirs:
+  dir_path = '%s/%s' % (dumpdir, file_type)
+  file_dirs[file_type]['base_path'] = dir_path
+  if not os.path.exists(dir_path):
+    os.mkdir(dir_path)

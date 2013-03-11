@@ -8,6 +8,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.orm.collections import attribute_mapped_collection
 
+# Debug
+echo = False
+
 # Paths
 rootdir = '/Users/jmcarp/Dropbox/projects/fmri-software'
 datadir = '%s/data' % (rootdir)
@@ -27,7 +30,7 @@ def getdb(sqltype='postgres', dbfile=dbfile):
     if heroku_url:
       db = create_engine(heroku_url)
     else:
-      db = create_engine('postgresql+psycopg2://jmcarp@localhost/postgres')
+      db = create_engine('postgresql+psycopg2://jmcarp@localhost/postgres', echo=echo)
 
   # Create tables
   Base.metadata.create_all(db)
@@ -247,7 +250,7 @@ class Article(Base):
   xml = Column(Text)
   
   # Date
-  pubyear = Column(String,
+  pubyear = Column(String, index=True,
     info={'vis' : True, 'full' : 'Publication Year'})
   pubmonth = Column(String)
   pubday = Column(String)
@@ -261,6 +264,7 @@ class Article(Base):
   htmlfile = Column(String)
   pdfrawfile = Column(String)
   pdftxtfile = Column(String)
+  pmcfile = Column(String)
 
   # Extration methods
   htmlmeth = Column(String)

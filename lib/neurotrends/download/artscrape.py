@@ -14,12 +14,18 @@ from BeautifulSoup import BeautifulSoup as bs
 from mechtools import *
 from htmlrules import *
 from pdfrules import *
+from pmcscrape import *
 from journalinfo import *
 from util import *
 
 # Links
 pmbase = 'http://www.ncbi.nlm.nih.gov/pubmed'
 doibase = 'http://dx.doi.org'
+
+defaults = {
+  'html_check_fun' : lambda br: not verpdf(br),
+  'pdf_check_fun' : lambda br: verpdf(br),
+}
 
 def brdump(br, outname):
   """
@@ -153,14 +159,21 @@ accessrule = {
   'pdf' : [],
 }
 
-def repdump(dtype, fun, br, verfun=None, ntry=5, wtime=5, nftime=600):
-  """
+def repdump(doc_type, fun, br, verfun=None, ntry=5, wtime=5, nftime=600):
+  '''
   Download document from publisher
-  """
+  '''
   
   url = br.geturl()
   ct = 0
   
+  # Get default check function
+  if verfun is None:
+    if doc_type == 'html':
+      verfun = defaults['html_check_fun']
+    elif doc_type == 'pdfraw':
+      verfun = defaults['pdf_check_fun']
+
   while ct < ntry:
 
     if ct > 0:
@@ -199,14 +212,13 @@ def repdump(dtype, fun, br, verfun=None, ntry=5, wtime=5, nftime=600):
       if not access_granted:
         for ptn in access_fail_ptn:
           if re.search(ptn, html, re.I):
-            print 'accessfail', ptn
             raise Exception('no access')
 
       # Check for access
-      if dtype == 'html':
+      if doc_type == 'html':
         if any([rule(html, soup) for rule in accessrule['html']]):
           raise Exception('no access')
-      elif dtype == 'pdf':
+      elif doc_type == 'pdfraw':
         if any([rule(html, soup) for rule in accessrule['pdf']]):
           raise Exception('no access')
 
@@ -217,7 +229,7 @@ def repdump(dtype, fun, br, verfun=None, ntry=5, wtime=5, nftime=600):
           raise Exception('no access')
 
       # Check for PDF frame
-      if dtype == 'html':
+      if doc_type == 'html':
         pdfframe = soup.find(re.compile('^i?frame$'), 
           {'src' : re.compile('\.pdf', re.I)})
         if pdfframe:
@@ -240,7 +252,7 @@ def repdump(dtype, fun, br, verfun=None, ntry=5, wtime=5, nftime=600):
 
   raise exc
 
-def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
+def pmid2file(pmid, br, out_files, doi=None):
   
   print 'Working on PMID %s...' % (pmid)
   
@@ -281,10 +293,10 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
     return '; '.join(status), '', '', ''
   
   # Delete existing output files
-  if os.path.exists(outhtml):
-    os.remove(outhtml)
-  if os.path.exists(outpdf):
-    os.remove(outpdf)
+  if os.path.exists(out_files['html']):
+    os.remove(out_files['html'])
+  if os.path.exists(out_files['pdfraw']):
+    os.remove(out_files['pdfraw'])
   
   # Redirect through UM Library proxy
   liburl, liberror = libproxy(br)
@@ -292,43 +304,40 @@ def pmid2file(pmid, br, outhtml=None, outpdf=None, doi=None):
     status.append(liberror)
 
   # Get default methods
-  htmlmeth = htmldefault
-  pdfmeth = pdfdefault
+  scrape_methods = {
+    'html' : htmldefault,
+    'pdfraw' : pdfdefault,
+    'pmc' : '',
+  }
   
   # Get publisher rules
   for ji in journalinfo:
     if journalinfo[ji]['rule'](liburl):
       if 'htmlmeth' in journalinfo[ji]:
-        htmlmeth = journalinfo[ji]['htmlmeth']
+        scrape_methods['html'] = journalinfo[ji]['htmlmeth']
       if 'pdfmeth' in journalinfo[ji]:
-        pdfmeth = journalinfo[ji]['pdfmeth']
+        scrape_methods['pdf'] = journalinfo[ji]['pdfmeth']
       break
   
-  # Download HTML
-  print 'Downloading HTML...'
-  if outhtml and htmlmeth:
+  for out_type in ['html', 'pdfraw', 'pmc']:
+    file_name = out_files[out_type]
+    scrape_method = scrape_methods[out_type]
+    if file_name is None or scrape_method is None:
+      continue
+    print 'Downloading %s...' % (out_type.upper())
     try:
-      repdump('html', htmlmeth, br, verfun=lambda br: not verpdf(br))
-      brdump(br, outhtml)
-    except:
-      status.append('error on html: %s' % (repr(sys.exc_info()[1])))
-      outhtml = None
-  
-  # Return to starting URL
-  br.open(liburl)
-  
-  # Download PDF
-  print 'Downloading PDF...'
-  if outpdf and pdfmeth:
-    try:
-      repdump('pdf', pdfmeth, br, verfun=verpdf)
-      brdump(br, outpdf)
-    except:
-      status.append('error on pdf: %s' % (repr(sys.exc_info()[1])))
-      outpdf = None
-  
+      if out_type in ['html', 'pdfraw']:
+        br.open(liburl)
+        repdump(out_type, scrape_method, br)
+      else:
+        pmc_scrape(br, pmid)
+      brdump(br, file_name)
+    except Exception as exc:
+      print exc
+      status.append('error on %s: %s' % (out_type, exc.message))
+
   # Get status
   status.reverse()
   if not status:
     status = ['success']
-  return '; '.join(status), url, outhtml, outpdf, htmlmeth, pdfmeth
+  return '; '.join(status), url, out_files, scrape_methods

@@ -13,7 +13,9 @@ from util import *
 
 # Import RPy2 modules
 import rpy2.robjects as ro
-import rpy2.robjects.lib.ggplot2 as ggplot2
+#import rpy2.robjects.lib.ggplot2 as ggplot2
+from rpy2.robjects.packages import importr
+ggplot2 = importr('ggplot2')
 
 # Import map tools
 filedir = os.path.split(__file__)[0]

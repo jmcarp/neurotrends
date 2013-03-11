@@ -20,6 +20,31 @@ def getpipe(art, attgrps):
 
   return pipe
 
+def art_to_descs(art):
+  
+  return [att._desc.replace(' ', '_') for att in art.attribs]
+
+def arts_to_txt(outname):
+  
+  val_filter = or_(Article.htmlval > 0.9, Article.pdfval > 0.9)
+  arts = session.query(Article).filter(val_filter)
+  art_count = arts.count()
+  
+  # Open output file
+  outfile = open(outname, 'w')
+
+  # Write descriptions to file
+  for artidx in range(art_count):
+    print 'Working on article #%d...' % (artidx)
+    art = arts[artidx]
+    descs = art_to_descs(art)
+    txt = ' '.join([art.pmid, '_'] + descs)
+    outfile.write(txt)
+    outfile.write('\n')
+
+  # Close output file
+  outfile.close()
+
 def varbyyear(attmaps):
   
   result = dict([(attmap, []) for attmap in attmaps])
@@ -130,6 +155,7 @@ def getattrmap(src, incl=[], excl=[]):
 
   attrs = [gettags(src, tag, rettype='attrib') for tag in tags]
   attrmap = dict(zip(tags, attrs))
+
   return attrmap
 
 pulsemap = getattrmap('pulse')

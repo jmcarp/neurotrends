@@ -1,8 +1,23 @@
 # Import modules
 import time
+from BeautifulSoup import UnicodeDammit
 
 # Import project modules
 from trenddb import *
+from trendpath import *
+
+def short_name(full_path):
+  return os.path.split(full_path)[-1]
+
+def file_path(pmid, file_type, file_info):
+  return '%s/%s.%s' % (
+    file_info[file_type]['base_path'],
+    pmid,
+    file_info[file_type]['file_ext']
+  )
+
+def to_unicode(s):
+  return UnicodeDammit(s).unicode
 
 def toart(art):
   """

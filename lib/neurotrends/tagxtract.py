@@ -6,7 +6,6 @@ import shelve
 
 # Import external modules
 from BeautifulSoup import BeautifulSoup as BS
-from BeautifulSoup import UnicodeDammit
 from sqlalchemy.orm.exc import MultipleResultsFound
 import lxml.html
 
@@ -65,7 +64,6 @@ def batchclearattrib(usereport=False):
   """
   
   if not usereport:
-
    
     # Clear association tables
     session.execute('DELETE FROM attribs_fields')
@@ -142,6 +140,56 @@ def batchartparse(usereport=False, groups=[]):
   # Save changes
   session.commit()
 
+def load_doc(art, doc_type):
+  
+  if doc_type == 'html':
+    return loadhtml(art)
+  elif doc_type == 'pdf':
+    return loadpdf(art)
+  elif doc_type == 'pmc':
+    return loadpmc(art)
+  raise Exception('Document type %s not implemented' % (doc_type))
+
+def art_verify(art, doc_types):
+  
+  # Cast article to Article
+  art = toart(art)
+
+  # Get article info
+  info = artinfo({'xml' : art.xml})
+
+  # Quit if no abstract
+  if info['abstxt'] is None:
+    return {}
+
+  # Tokenize abstract
+  abs_txt = info['abstxt']
+  abs_words = re.split('\s+', abstxt)
+  abs_words = [word.lower() for word in abs_words]
+
+  # Ignore punctuation
+  for char in ['.', ',', ';', ':']:
+    abs_words = [word.strip(char) for word in abs_words]
+  
+  # Initialize document proportions
+  doc_prop = {}
+
+  # Loop over document types
+  for doc_type in doc_types:
+    
+    # Load document text
+    doc_text = load_doc(art, doc_type)
+    doc_text = to_unicode(doc_text)
+    doc_text = doc_text.lower()
+    
+    # Get document proportions
+    if doc_text:
+      doc_words = [word for word in abs_words if doc_text.find(word) > -1]
+      doc_prop[doc_type] = float(len(doc_words)) / len(abs_words)
+
+  # Return document proportions
+  return doc_prop
+
 def artverify(art, html='', pdf=''):
   """
   Check whether HTML and PDF documents match abstract text
@@ -171,12 +219,12 @@ def artverify(art, html='', pdf=''):
 
   # Load HTML
   if not html:
-    html = loadhtml(art, overwrite=True)#, raw=True)
+    html = loadhtml(art, overwrite=True)
   
   # Load PDF
   if not pdf:
     pdf = loadpdf(art)
-    pdf = UnicodeDammit(pdf).unicode
+    pdf = to_unicode(pdf)
 
   # To lower-case
   html = html.lower()
@@ -199,6 +247,27 @@ def artverify(art, html='', pdf=''):
   # Return
   return htmlprop, pdfprop
 
+def loadpmc(art, method='soup'):
+    
+  art = toart(art)
+
+  pmcfile = file_path(art.pmid, 'html', file_dirs)
+  
+  html = ''
+
+  if art.pmcfile and os.path.exists(pmcfile):
+
+    html = ''.join(open(pmcfile, 'r').readlines())
+    try:
+      html = parsehtml(html, method=method)
+    except:
+      return ''
+
+    html = to_unicode(html)
+    html = parser.unescape(html)
+
+  return html
+
 def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
   """
   Load HTML text for an article
@@ -213,8 +282,8 @@ def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
   artobj = toart(art)
   htmltxt = ''
 
-  htmlfile = '%s/%s.html' % (htmldir, artobj.pmid)
-  chtmlfile = '%s/%s.shelf' % (chtmldir, artobj.pmid)
+  htmlfile = file_path(art.pmid, 'html', file_dirs)
+  chtmlfile = file_path(art.pmid, 'chtml', file_dirs)
 
   if overwrite and os.path.exists(chtmlfile):
     os.remove(chtmlfile)
@@ -256,7 +325,7 @@ def loadhtml(art, overwrite=False, method='lxml', raw=False, verbose=False):
       except:
         return ''
 
-      htmltxt = UnicodeDammit(htmltxt).unicode
+      htmltxt = to_unicode(htmltxt)
       htmltxt = parser.unescape(htmltxt)
 
       # Save clean HTML
@@ -283,11 +352,11 @@ def loadpdf(art, verbose=False):
 
   if artobj.pdftxtfile:
 
-    pdffile = '%s/%s' % (pdftxtdir, artobj.pdftxtfile)
+    pdftxtfile = file_path(artobj.pmid, 'pdftxt', file_dirs)
 
-    if os.path.exists(pdffile):
+    if os.path.exists(pdftxtfile):
       
-      s = shelve.open(pdffile)
+      s = shelve.open(pdftxtfile)
       pdftxt = s['pdfinfo']['txt']
       
       # Done
@@ -552,8 +621,6 @@ def txt2tag(txt, src, verbose=True):
     vals = []
     for ptn in tagptn:
       ruleres = ptn.apply(srctxt)
-      #ruleres = ptn(srctxt)
-      #ruleres = applyrule(ptn, srctxt)
       for val, snip in ruleres:
         if val:
           foundtag = True

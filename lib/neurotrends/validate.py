@@ -11,6 +11,100 @@ import reportproc as rp
 # Import project modules
 from tagplot import *
 
+# NLTK imports
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem.porter import PorterStemmer
+stemmer = PorterStemmer()
+
+def preproc(art):
+  """
+  Extract a cleaned list of tokens from an Article.
+  """
+  
+  html = loadhtml(art)
+  pdf = loadpdf(art)
+
+  text = html + ' ' + pdf
+
+  # Lower-case
+  text = text.lower()
+
+  # Remove extra <script> tags
+  text = re.sub('<script>.*?</script>', '', text)
+
+  # Tokenize
+  tokens = nltk.word_tokenize(text)
+
+  # Remove stop-words
+  tokens = [
+    t for t in tokens 
+    if t not in stopwords.words('english') 
+    and len(t) > 2
+    and re.search('[a-z]+', t)
+  ]
+
+  return tokens
+
+def articles_to_mallet(outname, method):
+  
+  # Open output file
+  if method == 'onefile':
+    outfile = open(outname, 'w')
+
+  # Read report
+  report = rp.ezread()
+  
+  # Get articles in both report and NeuroTrends
+  arts = [
+    art for art in report
+    if art['proc-slicetime-bool'] in ['TRUE', 'FALSE', 'missing']
+    and session.query(Article).filter(Article.pmid == art['pmid']).count()
+  ]
+  
+  # Initialize return list
+  out = []
+
+  # Process articles
+  for art in arts:
+    
+    print 'Working on article %s...' % (art['pmid'])
+
+    # Get tokens
+    tokens = preproc(toart(art['pmid']))
+    
+    # Skip if no tokens found
+    if not tokens:
+      continue
+    
+    # Write PMID, label, and tokens to output file
+    if method == 'onefile':
+      outrow = [art['pmid'], art['proc-slicetime-bool']] + tokens
+      outtext = ' '.join(outrow)
+      outtext = outtext.encode('ascii', 'ignore')
+      outfile.write(outtext)
+    elif method == 'manyfiles':
+      outpath = '%s/%s' % (outname, art['proc-slicetime-bool'])
+      if not os.path.exists(outpath):
+        os.makedirs(outpath)
+      outfile = open('%s/%s.txt' % (outpath, art['pmid']), 'w')
+      outtext = ' '.join(tokens)
+      outtext = outtext.encode('ascii', 'ignore')
+      outfile.write(outtext)
+      outfile.close()
+
+    out.append({
+      'pmid' : art['pmid'],
+      'stc' : art['proc-slicetime-bool'],
+      'tokens' : ' '.join(tokens),
+    })
+
+  # Close output file
+  if method == 'onefile':
+    outfile.close()
+
+  return out
+
 def makecolfun(ptn):
   
   fun = lambda txt: bool(re.search(ptn, txt, re.I))
