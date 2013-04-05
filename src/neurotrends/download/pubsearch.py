@@ -35,12 +35,12 @@ query = \
   ' NOT "review"[PT]' + \
   ' NOT "meta-analysis[PT]'
 
-def artsearch(query, verbose=True):
+def artsearch(query, verbose=True, retmax=999999):
 
   if verbose:
     print('Searching terms %s...\n', (query))
 
-  srchnd = retry(Entrez.esearch, 5, 5, db='pubmed', retmax=999999, term=query)
+  srchnd = retry(Entrez.esearch, 5, 5, db='pubmed', retmax=retmax, term=query)
   srcrec = retry(Entrez.read, 5, 5, srchnd)
   arts = [{'pmid' : int(pmid)} for pmid in srcrec['IdList']]
   

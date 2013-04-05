@@ -46,10 +46,10 @@ class ArtInfo(object):
     
     return pdftxt
 
-  def _load_html(self, method='lxml'):
+  def _load_html(self, method='soup'):
 
     txt = ''
-    htmlfile = file_path(art.pmid, 'html', file_dirs)
+    htmlfile = file_path(self.artSQA.pmid, 'html', file_dirs)
 
     if self.artSQA.htmlfile and os.path.exists(htmlfile):
 
@@ -102,6 +102,7 @@ class ArtInfo(object):
   def _load_pmc(self, method='soup'):
       
     pmcfile = file_path(self.artSQA.pmid, 'pmc', file_dirs)
+    print pmcfile
     
     html = ''
 

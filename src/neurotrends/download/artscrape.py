@@ -293,10 +293,9 @@ def pmid2file(pmid, br, out_files, doi=None):
     return '; '.join(status), '', '', ''
   
   # Delete existing output files
-  if os.path.exists(out_files['html']):
-    os.remove(out_files['html'])
-  if os.path.exists(out_files['pdfraw']):
-    os.remove(out_files['pdfraw'])
+  for out_file in out_files:
+    if os.path.exists(out_files[out_file]):
+      os.remove(out_files[out_file])
   
   # Redirect through UM Library proxy
   liburl, liberror = libproxy(br)
@@ -319,7 +318,7 @@ def pmid2file(pmid, br, out_files, doi=None):
         scrape_methods['pdf'] = journalinfo[ji]['pdfmeth']
       break
   
-  for out_type in ['html', 'pdfraw', 'pmc']:
+  for out_type in out_files:
     file_name = out_files[out_type]
     scrape_method = scrape_methods[out_type]
     if file_name is None or scrape_method is None:
@@ -334,6 +333,7 @@ def pmid2file(pmid, br, out_files, doi=None):
       brdump(br, file_name)
     except Exception as exc:
       print exc
+      out_files[out_type] = None
       status.append('error on %s: %s' % (out_type, exc.message))
 
   # Get status

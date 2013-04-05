@@ -12,5 +12,5 @@ def pmc_scrape(br, pmid):
   br.open(pmc_url)
   html = br.response().read()
   
-  if re.search('ipmc11', html, re.I):
+  if re.search('ipmc11|ipmc12', html, re.I):
     raise('Bad PMC link')

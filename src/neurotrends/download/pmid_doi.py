@@ -16,7 +16,7 @@ def pmid_doi(info):
   {u'doi': u'10.1037/0033-2909.125.1.155', u'pmid': u'9990848'}
   > pmid_doi({'doi' : '10.1037/0033-2909.125.1.155'})
   {u'doi': u'10.1037/0033-2909.125.1.155', u'pmid': u'9990848'}
-
+  
   '''
   
   # Quit if both PMID and DOI provided
