@@ -35,7 +35,7 @@ query = \
   ' NOT "review"[PT]' + \
   ' NOT "meta-analysis[PT]'
 
-def artsearch(query, verbose=True, retmax=999999):
+def artsearch(query=query, verbose=True, retmax=999999):
 
   if verbose:
     print('Searching terms %s...\n', (query))
