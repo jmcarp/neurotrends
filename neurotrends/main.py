@@ -105,16 +105,17 @@ def prune(commit_interval=50):
     nt.session.commit()
 
 def update(pmids=[], ndelay=None, doc_types=doc_types, do_parse=True, overwrite=True):
-    '''
-    Add articles to database. Get article info, location, 
+    """Add articles to database. Get article info, location, 
     files, and meta-data.
+
     Args:
         pmids (list, optional): PubMed IDs of articles to add.
             If empty, add all missing articles
         ndelay (int/None): If len(pmids) > ndelay, add delay
             between articles
         overwrite (bool): Overwrite article info
-    '''
+
+    """
     
     # Set up scraper
     scraper = scrape.UMScrape(user_file=user_file)
@@ -275,7 +276,7 @@ def buildart(art):
         doi = pubsearch.pmdoi(art)
         # If none, try CrossRef
         if not doi:
-            doi = xrdoi(art)
+            doi = pubsearch.xrdoi(art)
         if doi:
             art['doi'] = pubsearch.parser.unescape(doi)
 

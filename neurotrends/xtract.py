@@ -7,6 +7,7 @@ import neurotrends as nt
 from neurotrends import util
 from neurotrends import trenddb
 from neurotrends import trendpath
+from neurotrends.acrobatch import acrobatch
 
 # Sciscrape imports
 from sciscrape.pdftools import pdfx

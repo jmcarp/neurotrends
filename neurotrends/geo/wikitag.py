@@ -5,6 +5,7 @@ import os
 import re
 import shelve
 import urllib
+import unidecode
 
 import Queue
 
@@ -157,13 +158,6 @@ non_places = [
     'college of medicine', 'medical school',
 ]
 
-wiki_variants = [
-    ('-', ' '),
-    ('\sat\s', ' '),
-    ('\(.*?\)', ''),
-    ('(?<=\s)(?:and|&amp;)(?=\s).*', ''),
-]
-
 contingent_skip_patterns = [
     'division',
     '(?<!\w)unit(?!\w)',
@@ -189,7 +183,8 @@ def _prep_query(query):
     query = UnicodeDammit(query).unicode
 
     # Replace accents (ü -> u)
-    query = geotools.strip_accents(query)
+    query = unidecode.unidecode(query)
+    #query = geotools.strip_accents(query)
     
     # Split and capitalize query terms
     terms = map(
