@@ -1,111 +1,162 @@
-cat = 'analysis'
+category = 'analysis'
 
-# Import base
-from base import *
+from neurotrends.config import re
+from neurotrends.tagger import RexTagger, MultiRexTagger
+from misc import delimiter
 
-# Initialize tags
-tags = {}
+kda = RexTagger(
+    'kda',
+    [
+        re.compile(r'\WKDA\W'),
+    ]
+)
 
-tags['mkda'] = [
-  'multi%slevel%skernel%sdensity%sanalysis' % delimrep(4),
-  'multi%slevel%skda' % delimrep(2),
-  '\Wmkda\W',
-]
+kda_context = MultiRexTagger(
+    'kda',
+    [
+        r'kernel{dlm}density{dlm}analysis'.format(dlm=delimiter),
+    ],
+    [
+        r'multi{dlm}level'.format(dlm=delimiter),
+    ],
+    separator='[^.,:;?]*'
+)
 
-priptn_kda = [
-  'kernel%sdensity%sanalysis' % delimrep(2),
-]
-negptn_kda = [
-  'multi%slevel' % (delimptn),
-]
-def checkkda(txt, **conargs):
-  return contextsearch(txt, priptn_kda, negptn=negptn_kda, 
-    ichar='.', npre=25, npost=0, **conargs)
+mkda = RexTagger(
+    'mkda',
+    [
+        r'''
+            multi{dlm}level{dlm}kernel{dlm}density{dlm}analysis
+        '''.format(dlm=delimiter),
+        r'multi{dlm}level{dlm}kda'.format(dlm=delimiter),
+        r'\Wmkda\W',
+    ]
+)
 
-tags['kda'] = [
-  re.compile('\WKDA\W'),
-  checkkda,
-]
+ale = RexTagger(
+    'ale',
+    [
+        r'activation{dlm}likelihood{dlm}analysis'.format(dlm=delimiter),
+        r'ginger{dlm}ale'.format(dlm=delimiter),
+    ]
+)
 
-tags['ale'] = [
-  'activation%slikelihood%sanalysis' % delimrep(2),
-  'ginger%sale' % (delimptn),
-]
+loc = RexTagger(
+    'localizer',
+    [
+        r'localizer',
+    ]
+)
 
-tags['loc'] = [
-  'localizer',
-]
+conj = RexTagger(
+    'conj',
+    [
+        r'conjunction{dlm}(analy|mask|map)'.format(dlm=delimiter),
+        r'cognitive{dlm}conjunction'.format(dlm=delimiter),
+        r'conjunction.{,25}contrast',
+        r'conjunction.{,25}condition',
+        r'conjunction.{,25}task',
+    ]
+)
 
-tags['conj'] = [
-  'conjunction%s(?:analy|mask|map)' % (delimptn),
-  'cognitive%sconjunction' % (delimptn),
-  'conjunction.{,25}contrast',
-  'conjunction.{,25}condition',
-  'conjunction.{,25}task',
-  ]
+roi = RexTagger(
+    'roi',
+    [
+        r'regions?{dlm}of{dlm}interest'.format(dlm=delimiter),
+        r'\Wrois?\W',
+    ]
+)
 
-tags['roi'] = [
-  'regions?%sof%sinterest' % delimrep(2),
-  '\Wrois?\W',
-]
+vox = RexTagger(
+    'vox',
+    [
+        r'voxel{dlm}wise'.format(dlm=delimiter),
+        r'whole{dlm}brain{dlm}analysis'.format(dlm=delimiter),
+        r'whole{dlm}brain{dlm}contrast'.format(dlm=delimiter),
+        r'whole{dlm}brain{dlm}statistic'.format(dlm=delimiter),
+        r'whole{dlm}brain{dlm}comparison'.format(dlm=delimiter),
+        r'whole{dlm}brain{dlm}correct'.format(dlm=delimiter),
+    ]
+)
 
-tags['vox'] = [
-  'voxel%swise' % (delimptn),
-  'whole%sbrain%sanalysis' % delimrep(2),
-  'whole%sbrain%scontrast' % delimrep(2),
-  'whole%sbrain%sstatistic' % delimrep(2),
-  'whole%sbrain%scomparison' % delimrep(2),
-  'whole%sbrain%scorrect' % delimrep(2),
-]
+ppi = RexTagger(
+    'ppi',
+    [
+        r'psycho{dlm}physiologic(al)?{dlm}interaction'.format(dlm=delimiter),
+        r'physio{dlm}physiologic(al)?{dlm}interaction'.format(dlm=delimiter),
+        r'\Wppi\W',
+    ]
+)
 
-tags['ppi'] = [
-  'psycho%sphysiologic(?:al)?%sinteraction' % delimrep(2),
-  'physio%sphysiologic(?:al)?%sinteraction' % delimrep(2),
-  '\Wppi\W',
-]
+betser = RexTagger(
+    'betser',
+    [
+        r'beta{dlm}series'.format(dlm=delimiter),
+    ]
+)
 
-tags['betser'] = [
-  'beta%sseries' % (delimptn),
-]
+dcm = RexTagger(
+    'dcm',
+    [
+        r'dynamic{dlm}causal{dlm}model'.format(dlm=delimiter),
+        r'\Wdcm\W',
+    ]
+)
 
-tags['dcm'] = [
-  'dynamic%scausal%smodel' % delimrep(2),
-  '\Wdcm\W',
-]
+grc = RexTagger(
+    'grc',
+    [
+        r'granger{dlm}causal'.format(dlm=delimiter),
+    ]
+)
 
-tags['grc'] = [
-  'granger%scausal' % (delimptn),
-]
+sem = RexTagger(
+    'sem',
+        [
+        # Note: SEM conflicts with standard error of the mean
+        r'structural{dlm}equation{dlm}model'.format(dlm=delimiter),
+    ]
+)
 
-tags['sem'] = [
-  'structural%sequation%smodel' % delimrep(2),
-  # Note: SEM conflicts with standard error of the mean
-]
+vbm = RexTagger(
+    'vbm',
+        [
+        r'voxel{dlm}based{dlm}morphometry'.format(dlm=delimiter),
+        re.compile(r'\WVBM\W'),
+    ]
+)
 
-tags['vbm'] = [
-  'voxel%sbased%smorphometry' % delimrep(2),
-  re.compile('\WVBM\W'),
-]
+pca = RexTagger(
+    'pca',
+        [
+        r'principal{dlm}components?{dlm}analysis'.format(dlm=delimiter),
+        re.compile(r'\WPCA\W'),
+    ]
+)
 
-tags['pca'] = [
-  'principal%scomponents?%sanalysis' % delimrep(2),
-  re.compile('\WPCA\W'),
-]
+ica = RexTagger(
+    'ica',
+        [
+        r'independent{dlm}components?{dlm}analysis'.format(dlm=delimiter),
+        re.compile(r'\WICA\W'),
+    ]
+)
 
-tags['ica'] = [
-  'independent%scomponents?%sanalysis' % delimrep(2),
-  re.compile('\WICA\W'),
-]
+pls = RexTagger(
+    'pls',
+        [
+        'partial{dlm}least{dlm}squares'.format(dlm=delimiter),
+        re.compile('\WPLS\W'),
+    ]
+)
 
-tags['pls'] = [
-  'partial%sleast%ssquares' % delimrep(2),
-  re.compile('\WPLS\W'),
-]
-
-tags['mvpa'] = [
-  'multi%svariate%spattern' % delimrep(2),
-  'multi%svoxel%spattern' % delimrep(2),
-  re.compile('\WMVPA\W'),
-  'support%svector' % (delimptn),
-  re.compile('\WSVM\W'),
-]
+mvpa = RexTagger(
+    'mvpa',
+    [
+        r'multi{dlm}variate{dlm}pattern'.format(dlm=delimiter),
+        r'multi{dlm}voxel{dlm}pattern'.format(dlm=delimiter),
+        re.compile(r'\WMVPA\W'),
+        r'support{dlm}vector'.format(dlm=delimiter),
+        re.compile(r'\WSVM\W'),
+    ]
+)

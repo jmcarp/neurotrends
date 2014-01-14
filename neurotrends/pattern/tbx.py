@@ -1,83 +1,136 @@
-cat = 'tool'
+category = 'tool'
 
-# Import base
-from base import *
+from neurotrends.config import re
+from neurotrends.tagger import RexTagger
+from misc import delimiter, mni_ptn, spc_ptn
 
-# Initialize tags
-tags = {}
+marsbar = RexTagger(
+    'marsbar',
+    [
+        r'mars{dlm}bar'.format(dlm=delimiter),
+        r'sourceforge\.net/projects/marsbar',
+        r'''
+            marseille{dlm}region{dlm}of{dlm}interest{dlm}toolbox
+        '''.format(dlm=delimiter),
+    ]
+)
 
-tags['marsbar'] = [
-  'mars%sbar' % (delimptn),
-  'sourceforge\.net/projects/marsbar',
-  'marseille%sregion%sof%sinterest%stoolbox' % delimrep(4),
-]
+pickatlas = RexTagger(
+    'pickatlas',
+    [
+        r'\Wpick{dlm}atlas'.format(dlm=delimiter),
+    ]
+)
 
-tags['pickatlas'] = [
-  '\Wpick%satlas' % (delimptn),
-]
+surfrend = RexTagger(
+    'surfrend',
+    [
+        r'\Wsurf{dlm}rend'.format(dlm=delimiter),
+    ]
+)
 
-tags['surfrend'] = [
-  '\Wsurf%srend' % (delimptn),
-]
+rest = RexTagger(
+    'rest',
+    [
+        r'resting{dlm}state{dlm}fmri{dlm}data{dlm}analysis{dlm}toolkit'.format(dlm=delimiter),
+        r'rest{dlm}(by)?{dlm}song{dlm}xiao'.format(dlm=delimiter),
+        r'resting\-fmri\.sourceforge\.net',
+        r'sourceforge\.net/projects/resting\-fmri',
+        r'restfmri\.net',
+    ]
+)
 
-tags['rest'] = [
-  'resting%sstate%sfmri%sdata%sanalysis%stoolkit' % delimrep(5),
-  'rest%s(?:by)?%ssong%sxiao' % delimrep(3),
-  'resting\-fmri\.sourceforge\.net',
-  'sourceforge\.net/projects/resting\-fmri',
-  'restfmri\.net',
-]
+aal = RexTagger(
+    'aal',
+    [
+        re.compile(r'\WAAL\W'),
+        r'automatic{dlm}anatomic(al)?{dlm}label'.format(dlm=delimiter),
+    ]
+)
 
-tags['aal'] = [
-  re.compile('\WAAL\W'),
-  'automatic%sanatomic(?:al)?%slabel' % delimrep(2),
-]
+snpm = RexTagger(
+    'snpm',
+        [
+        r'\Wsnpm\W',
+        r'statistical{dlm}non{dlm}parametric{dlm}mapping'.format(dlm=delimiter),
+    ]
+)
 
-tags['snpm'] = [
-  '\Wsnpm\W',
-  'statistical%snon%sparametric%smapping' % delimrep(3),
-]
+spmd = RexTagger(
+    'spmd',
+        [
+        r'\Wspmd\W',
+        r'''
+            statistical{dlm}parametric{dlm}mapping{dlm}diagnosis
+        '''.format(dlm=delimiter),
+    ]
+)
 
-tags['spmd'] = [
-  '\Wspmd\W',
-  'statistical%sparametric%smapping%sdiagnosis' % delimrep(3),
-]
+artrepair = RexTagger(
+    'artrepair',
+        [
+        r'\Wart{dlm}repair'.format(dlm=delimiter),
+    ]
+)
 
-tags['artrepair'] = [
-  '\Wart%srepair' % (delimptn),
-]
+xjview = RexTagger(
+    'xjview',
+    [
+        r'xjview',
+    ]
+)
 
-tags['xjview'] = [
-  'xjview',
-]
+fmripower = RexTagger(
+    'fmripower',
+    [
+        r'fmri{dlm}power'.format(dlm=delimiter),
+    ]
+)
 
-tags['fmripower'] = [
-  'fmri%spower' % (delimptn),
-]
+suit = RexTagger(
+    'suit',
+    [
+        r'spatially{dlm}un{dlm}biased{dlm}infra{dlm}tentorial'.format(dlm=delimiter),
+        r'\Wsuit{dlm}toolbox'.format(dlm=delimiter),
+    ]
+)
 
-tags['suit'] = [
-    'spatially%sun%sbiased%sinfra%stentorial' % delimrep(4),
-    '\Wsuit%stoolbox' % (delimptn),
-]
+gift = RexTagger(
+    'gift',
+        [
+        r'gift{dlm}(toolbox|software|program|package|library)'.format(dlm=delimiter),
+        r'group{dlm}ica{dlm}of{dlm}fmri'.format(dlm=delimiter),
+    ]
+)
 
-tags['gift'] = [
-  'gift%s(?:toolbox|software|program|package|library)' % (delimptn),
-  'group%sica%sof%sfmri' % delimrep(3),
-]
+daemon = RexTagger(
+    'daemon',
+    [
+        r'talairach{dlm}da?emon'.format(dlm=delimiter),
+        r'talairach{dlm}client'.format(dlm=delimiter),
+        r'talairach{dlm}app'.format(dlm=delimiter),
+    ]
+)
 
-tags['daemon'] = [
-    'talairach%sda?emon' % (delimptn),
-    'talairach%sclient' % (delimptn),
-    'talairach%sapp' % (delimptn),
-]
+mnital = RexTagger(
+    'mnital',
+    [
+        '{mni}{dlm}({spc})?{dlm}(2|to){dlm}tal'.format(
+            mni=mni_ptn,
+            spc=spc_ptn,
+            dlm=delimiter,
+        ),
+        r'tal(airach)?{dlm}(2|to){dlm}{mni}'.format(
+            mni=mni_ptn,
+            dlm=delimiter,
+        ),
+        r'imaging\.mrc\-cbu\.cam\.ac\.uk/imaging/mnitalairach',
+    ]
+)
 
-tags['mnital'] = [
-  '%s%s(?:%s)?%s(?:2|to)%stal' 
-    % (mniptn, delimptn, spcptn, delimptn, delimptn),
-  'tal(?:airach)?%s(?:2|to)%s%s' % (delimptn, delimptn, mniptn),
-  'imaging\.mrc\-cbu\.cam\.ac\.uk/imaging/mnitalairach',
-]
-
-tags['mricro'] = [
-  '\Wmricron?\W',
-]
+mricro = RexTagger(
+    'mricron',
+    [
+        r'\Wmricron?\W',
+    ]
+)

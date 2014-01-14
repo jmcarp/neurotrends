@@ -6,6 +6,7 @@ data/
 .DS_Store
 *.swp
 *.history
+.idea
 
 ### Default Python .gitignore
 

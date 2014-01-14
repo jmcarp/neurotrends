@@ -1,61 +1,119 @@
-cat = 'analysis'
+category = 'analysis'
 
-# Import base
-from base import *
+from neurotrends.config import re
+from neurotrends.tagger import RexTagger, MultiRexTagger
+from misc import delimiter
 
-# Check Monte Carlo correction
-priptn_monte = [
-  'monte%scarlo' % (delimptn),
-]
-secptn_monte = [
-  'multiple%scomparison' % (delimptn),
-]
-def checkmonte(txt, **conargs):
-  return contextsearch(txt, priptn_monte, secptn_monte, ichar='.', **conargs)
+fdr = RexTagger(
+    'fdr',
+    [
+        r'false{dlm}discovery{dlm}rate'.format(dlm=delimiter),
+        r'\Wfdr\W',
+    ]
+)
 
-# Initialize tags
-tags = {}
+fwe = RexTagger(
+    'fwe',
+    [
+        r'family{dlm}wise{dlm}error'.format(dlm=delimiter),
+        r'\Wfwe\w',
+    ]
+)
 
-tags['fdr'] = [
-  'false%sdiscovery%srate' % delimrep(2),
-  '\Wfdr',
-]
+rft = RexTagger(
+    'rft',
+    [
+        r'random{dlm}field{dlm}theory'.format(dlm=delimiter),
+        r'gaussian{dlm}random{dlm}field'.format(dlm=delimiter),
+        r'\Wgrf{dlm}theory'.format(dlm=delimiter),
+        r'theory{dlm}of{dlm}random{dlm}fields'.format(dlm=delimiter),
+        # Worsley et al., 1992
+        r'''
+            a{dlm}three{dlm}dimensional{dlm}statistical{dlm}analysis{dlm}
+                for{dlm}cbf{dlm}activation{dlm}studies{dlm}in{dlm}human
+                {dlm}brain
+        '''.format(dlm=delimiter),
+        # Friston et al., 1994
+        r'''
+            assessing{dlm}the{dlm}significance{dlm}of{dlm}focal{dlm}
+                activations{dlm}using{dlm}their{dlm}spatial{dlm}extent
+        '''.format(dlm=delimiter),
+    ]
+)
 
-tags['fwe'] = [
-  'family%swise%serror' % delimrep(2),
-  '\Wfwe',
-]
+bon = MultiRexTagger(
+    'bon',
+    [
+        r'bonferr?oni',
+    ],
+    [
+        r'activation',
+        r'voxel',
+        r'spm',
+        r'map',
+    ],
+    separator='[^.,:;?]*'
+)
 
-tags['rft'] = [
-  'random%sfield%stheory' % delimrep(2),
-  'gaussian%srandom%sfield' % delimrep(2),
-  '\Wgrf%stheory' % (delimptn),
-  'theory%sof%srandom%sfields' % delimrep(3),
-  # Worsley et al., 1992
-  ('a%sthree%sdimensional%sstatistical%sanalysis%s' + \
-    'for%scbf%sactivation%sstudies%sin%shuman%sbrain') % \
-    delimrep(11),
-  # Friston et al., 1994
-  ('assessing%sthe%ssignificance%sof%sfocal%sactivations%s' + \
-    'using%stheir%sspatial%sextent') % delimrep(9),
-]
+svc = RexTagger(
+    'svc',
+    [
+        r'small{dlm}volume{dlm}correction'.format(dlm=delimiter),
+        r'\Wsvc\W',
+    ]
+)
 
-tags['bon'] = [
-  'bonferroni',
-]
+# Tag AlphaSim separately from general Monte Carlo methods to identify
+# incorrect use when applied without smoothness estimation
+alphasim = RexTagger(
+    'alphasim',
+    [
+        r'alpha{dlm}sim'.format(dlm=delimiter),
+        r'clustsim',
+    ]
+)
 
-tags['svc'] = [
-  'small%svolume%scorrection' % delimrep(2),
-  '\Wsvc\W',
-]
+alphasim_context = MultiRexTagger(
+    'alphasim',
+    [
+        r'monte{dlm}carlo'.format(dlm=delimiter),
+    ],
+    [
+        r'rest{dlm}fmri'.format(dlm=delimiter),
+        re.compile(r'AFNI'),
+        re.compile(r'REST'),
+    ]
+)
 
-tags['monte'] = [
-  'alpha%ssim' % (delimptn),
-  'monte%scarlo%scorrect' % delimrep(2),
-  checkmonte,
-]
+monte = RexTagger(
+    'monte',
+    [
+        r'alpha{dlm}sim'.format(dlm=delimiter),
+        r'clustsim',
+        r'monte{dlm}carlo{dlm}correct'.format(dlm=delimiter),
+    ]
+)
 
-tags['tfce'] = [
-  'threshold%sfree%scluster%senhancement' % delimrep(3),
-  '\Wtcfe\W',
-]
+monte_context = MultiRexTagger(
+    'monte',
+    [
+        r'monte{dlm}carlo'.format(dlm=delimiter),
+    ],
+    [
+        r'multiple{dlm}comparison'.format(dlm=delimiter),
+        r'rest{dlm}fmri'.format(dlm=delimiter),
+        r'threshold',
+        re.compile(r'AFNI'),
+        re.compile(r'REST'),
+    ]
+)
+
+tfce = RexTagger(
+    'tfce',
+    [
+        r'''
+            threshold{dlm}free{dlm}cluster{dlm}enhancement
+        '''.format(dlm=delimiter),
+        r'\Wtcfe\W',
+    ]
+)

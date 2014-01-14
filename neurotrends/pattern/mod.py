@@ -1,107 +1,137 @@
-cat = 'analysis'
+category = 'analysis'
 
-# Import base
-from base import *
+from neurotrends.config import re
 
-# Check HRF
-priptn_hrf = [
-  'convol',
-]
-secptn_hrf = [
-  '\Whrf\W',
-  '\Whdr\W',
-  'ha?emodynamic%sresponse' % (delimptn),
-  'double%sgamma' % (delimptn),
-  'gamma%svariate' % (delimptn),
-  'gamma%sfunction' % (delimptn),
-  'variate%sfunction' % (delimptn),
-]
-def checkhrf(txt, **conargs):
-  return contextsearch(txt, priptn_hrf, secptn_hrf, **conargs)
+from neurotrends.tagger import RexTagger, MultiRexTagger
+from misc import delimiter
 
-# Check temporal derivative
-priptn_tmpdrv = [
-  '(?:hrf|hdr|ha?emodynamic%sresponse)' % (delimptn),
-]
-secptn_tmpdrv = [
-  'first%sderivative' % (delimptn),
-]
-def checktmpdrv(txt, **conargs):
-  return contextsearch(txt, priptn_tmpdrv, secptn_tmpdrv, ichar='.', **conargs)
+syn_ptn = r'(spm|canonical|standard|synthetic|reference|(proto)?typical)'
+hrf_ptn = r'(hrf|hdr|ha?emodynamic{dlm}(impulse)?{dlm}response)'.format(
+    dlm=delimiter
+)
 
-synptn = '(?:spm|canonical|standard|synthetic|reference|(?:proto)?typical)'
-hrfptn = '(?:hrf|hdr|ha?emodynamic%s(?:impulse)?%sresponse)' % delimrep(2)
+selavg = RexTagger(
+    'selavg',
+    [
+        r'selective(ly)?{dlm}averag'.format(dlm=delimiter),
+    ]
+)
 
-# Check FIR
-priptn_fir = [
-  'not?%sassum' % (delimptn),
-  'not%smake%s(?:any)?%sassum' % delimrep(3),
-  'ma[dk](?:es?|ing)?%sno%sassum' % delimrep(2),
-]
-secptn_fir = [
-  hrfptn,
-  'response%sshape' % (delimptn),
-  'shape%sof%s(?:the)?%sresponse' % delimrep(3),
-  'time%scource' % (delimptn),
-]
-def checkfir(txt, **conargs):
-  return contextsearch(txt, priptn_fir, secptn_fir, ichar='.', npre=0)
+hrf = RexTagger(
+    'hrf',
+    [
+        syn_ptn + delimiter + hrf_ptn,
+        r'''
+            convol(ved?|ution){dlm}with{dlm}(an?|the){dlm}
+                {syn}?{dlm}{hrf}
+        '''.format(
+            syn=syn_ptn,
+            hrf=hrf_ptn,
+            dlm=delimiter,
+        ),
+        r'gamma{dlm}{hrf}'.format(
+            hrf=hrf_ptn,
+            dlm=delimiter,
+        ),
+        r'(single|first|positive){dlm}gamma{dlm}function'.format(dlm=delimiter),
+        r'(double|second){dlm}gamma'.format(dlm=delimiter),
+        r'gamma{dlm}variate'.format(dlm=delimiter),
+        r'delayed{dlm}gamma{dlm}function'.format(dlm=delimiter),
+        r'(hrf|hdr){dlm}convol'.format(dlm=delimiter),
+    ]
+)
 
-# Check stick function
-priptn_stick = [
-  'se(?:t|ries)%sof%s(?:delta|stick)%sfunction' % delimrep(3),
-]
-negptn_stick = [
-  'convol',
-]
-def checkstick(txt, **conargs):
-  return contextsearch(txt, priptn_stick, negptn=negptn_stick, 
-    ichar='.', **conargs)
+hrf_context = MultiRexTagger(
+    'hrf',
+    [
+        r'convol',
+    ],
+    [
+        r'\Whrf\W',
+        r'\Whdr\W',
+        r'ha?emodynamic{dlm}response'.format(dlm=delimiter),
+        r'double{dlm}gamma'.format(dlm=delimiter),
+        r'gamma{dlm}variate'.format(dlm=delimiter),
+        r'gamma{dlm}function'.format(dlm=delimiter),
+        r'variate{dlm}function'.format(dlm=delimiter),
+    ],
+    separator='[^.,:;?]*'
+)
 
-# Initialize tags
-tags = {}
+tmpdrv = RexTagger(
+    'tmpdrv',
+    [
+        'temporal{dlm}(and{dlm}dispersion)?{dlm}derivative'.format(dlm=delimiter),
+        'time{dlm}(and{dlm}dispersion)?{dlm}derivative'.format(dlm=delimiter),
+    ]
+)
 
-tags['selavg'] = [
-  'selective(?:ly)?%saverag' % (delimptn),
-]
+tmpdrv_context = MultiRexTagger(
+    'tmpdrv',
+    [
+        r'(hrf|hdr|ha?emodynamic{dlm}response)'.format(dlm=delimiter),
+    ],
+    [
+        r'first{dlm}derivative'.format(dlm=delimiter),
+    ],
+    separator='[^.,:;?]*'
+)
 
-tags['hrf'] = [
-  synptn + delimptn + hrfptn,
-  'convol(?:ved?|ution)%swith%s(?:an?|the)' + \
-    delimptn + synptn + '?' + delimptn + hrfptn,
-  'gamma%s%s' % (delimptn, hrfptn),
-  '(?:single|first|positive)%sgamma%sfunction' % delimrep(2),
-  '(?:double|second)%sgamma' % (delimptn),
-  'gamma%svariate' % (delimptn),
-  'delayed%sgamma%sfunction' % delimrep(2),
-  '(?:hrf|hdr)%sconvol' % (delimptn),
-  checkhrf,
-]
+dspdrv = RexTagger(
+    'dspdrv',
+    [
+        r'dispersion{dlm}derivative'.format(dlm=delimiter),
+    ]
+)
 
-tags['tmpdrv'] = [
-  'temporal%s(?:and%sdispersion)?%sderivative' % delimrep(3),
-  'time%s(?:and%sdispersion)?%sderivative' % delimrep(3),
-  checktmpdrv,
-]
+fir = RexTagger(
+    'fir',
+    [
+        re.compile(r'\WFIR\W'),
+        r'\Wfir{dlm}\)?(basis|set)'.format(dlm=delimiter),
+        r'finite{dlm}impulse{dlm}response'.format(dlm=delimiter),
+    ]
+)
 
-tags['dspdrv'] = [
-  'dispersion%sderivative' % (delimptn),
-]
+fir_context = MultiRexTagger(
+    'fir',
+    [
+        r'not?{dlm}assum'.format(dlm=delimiter),
+        r'not{dlm}make{dlm}(any)?{dlm}assum'.format(dlm=delimiter),
+        r'ma[dk](es?|ing)?{dlm}no{dlm}assum'.format(dlm=delimiter),
+    ],
+    [
+        hrf_ptn,
+        r'response{dlm}shape'.format(dlm=delimiter),
+        r'shape{dlm}of{dlm}(the)?{dlm}response'.format(dlm=delimiter),
+        r'time{dlm}cource'.format(dlm=delimiter),
+    ],
+    separator='[^.,:;?]*'
+)
 
-tags['fir'] = [
-  re.compile('\WFIR\W'),
-  '\Wfir%s\)?(?:basis|set)' % delimrep(1),
-  'finite%simpulse%sresponse' % delimrep(2),
-  checkfir,
-  checkstick,
-]
+fir_stick_context = MultiRexTagger(
+    'fir',
+    [
+        r'se(t|ries){dlm}of{dlm}(delta|stick){dlm}function'.format(dlm=delimiter),
+    ],
+    [
+        r'convol',
+    ],
+    separator='[^.,:;?]*'
+)
 
-tags['rfx'] = [
-    'random%seffect' % (delimptn),
-    re.compile('\WRFX\W'),
-]
+rfx = RexTagger(
+    'rfx',
+    [
+        r'random{dlm}effect'.format(dlm=delimiter),
+        re.compile(r'\WRFX\W'),
+    ]
+)
 
-tags['ffx'] = [
-  'fixed%seffect' % (delimptn),
-  re.compile('\WFFX\W'),
-]
+ffx = RexTagger(
+    'ffx',
+    [
+        r'fixed{dlm}effect'.format(dlm=delimiter),
+        re.compile(r'\WFFX\W'),
+    ]
+)

@@ -1,65 +1,72 @@
-cat = 'tool'
+category = 'tool'
 
-# Import base
-from base import *
+from neurotrends.config import re
 
-# Initialize tags
-tags = {}
+from neurotrends.tagger import RexTagger, MultiRexTagger
+from misc import delimiter
 
-secptn_os = [
-  'pc',
-  'os',
-  'operating',
-  'platform',
-  'environment',
-  'workstation',
+os_secondary_ptn = [
+    r'\Wpc\W',
+    r'\Wos\W',
+    r'operating',
+    r'platform',
+    r'environment',
+    r'workstation',
 ]
-priptn_mac = [
-  'apple',
-  'mac(?:intosh)',
-]
-secptn_mac = [].extend(secptn_os)
-def checkmac(txt, **conargs):
-  return contextsearch(txt, priptn_mac, secptn_mac, ichar='.')
 
-priptn_windows = [
-  'windows'
-]
-secptn_windows = [
-  '95',
-  '98',
-  '2000',
-  '7',
-  '8',
-  'nt',
-  'me',
-  'millenn?ium',
-  'vista',
-].extend(secptn_os)
-def checkwindows(txt, **conargs):
-  return contextsearch(txt, priptn_windows, secptn_windows, ichar='.')
+mac = RexTagger(
+    'mac',
+    [
+        re.compile(r'OS[-/\s]*X'),
+        r'\Wmac{dlm}os\W'.format(dlm=delimiter),
+        r'spss{dlm}for{dlm}mac'.format(dlm=delimiter),
+    ]
+)
 
-tags['mac'] = {
-  'bool' : [
-    checkmac,
-    re.compile('OS[-/\s]*X'),
-  ],
-}
+mac_context = MultiRexTagger(
+    'mac',
+    [
+        r'apple',
+        r'mac(intosh)?',
+    ],
+    os_secondary_ptn,
+    separator='[^.,:;?]*'
+)
 
-tags['win'] = {
-  'bool' : [
-    checkwindows,
-  ],
-}
+windows_context = MultiRexTagger(
+    'windows',
+    [
+        r'windows',
+    ],
+    [
+        # Windows versions
+        r'\W95\W',
+        r'\W98\W',
+        r'\W2000\W',
+        r'\W7\W',
+        r'\W8\W',
+        r'\Wnt\W',
+        r'\Wme\W',
+        r'\Wxp\W',
+        r'\Wmillenn?ium\W',
+        r'\Wvista\W',
+        # Captures e.g. "SPSS for Windows"
+        r'spss',
+    ] + os_secondary_ptn,
+    separator='[^.,:;?]*'
+)
 
-tags['linux'] = [
-  'unix',
-  'linux',
-  'centos',
-  'debian',
-  'ubuntu',
-  'knoppix',
-  re.compile('SUSE'),
-  'solaris',
-  '\Wsunos\W',
-]
+linux = RexTagger(
+    'linux',
+    [
+        r'unix',
+        r'linux',
+        r'centos',
+        r'debian',
+        r'ubuntu',
+        r'knoppix',
+        re.compile(r'SUSE'),
+        r'solaris',
+        r'\Wsunos\W',
+    ]
+)

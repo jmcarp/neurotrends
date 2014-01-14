@@ -1,344 +1,280 @@
+"""
 
-# 
+"""
+
+from __future__ import division
+
 import re
-from scipy.stats import norm
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import norm, pearsonr
+
+from neurotrends.config import mongo
+from neurotrends.model.utils import verified_mongo
 
 # Import fmri-report
 import sys
 sys.path.append('/Users/jmcarp/Dropbox/projects/fmri-report/scripts')
 import reportproc as rp
 
-# Import project modules
-from tagplot import *
+report = rp.ezread()
 
-# NLTK imports
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem.porter import PorterStemmer
-stemmer = PorterStemmer()
+rp_pmids = [
+    article['pmid']
+    for article in report
+]
 
-def preproc(art):
-  """
-  Extract a cleaned list of tokens from an Article.
-  """
-  
-  html = loadhtml(art)
-  pdf = loadpdf(art)
+rp_pmids_no_supplement = [
+    article['pmid']
+    for article in report
+    if article['supplement'] == 'no'
+]
 
-  text = html + ' ' + pdf
+nt_pmids = [
+    article['pmid']
+    for article in mongo['article'].find(
+        verified_mongo, {'pmid': 1}
+    )
+]
 
-  # Lower-case
-  text = text.lower()
+pmids = set(rp_pmids).intersection(nt_pmids)
+pmids_no_supplement = set(rp_pmids_no_supplement).intersection(nt_pmids)
 
-  # Remove extra <script> tags
-  text = re.sub('<script>.*?</script>', '', text)
+class Validator(object):
 
-  # Tokenize
-  tokens = nltk.word_tokenize(text)
+    def __init__(self, tag, rp_column, rp_value='TRUE'):
+        self.tag = tag
+        self.rp_column = rp_column
+        self.rp_value = rp_value
 
-  # Remove stop-words
-  tokens = [
-    t for t in tokens 
-    if t not in stopwords.words('english') 
-    and len(t) > 2
-    and re.search('[a-z]+', t)
-  ]
+    def _get_nt_pmids(self, pmids):
+        articles = mongo['article'].find(
+            {
+                'pmid': {
+                    '$in': list(pmids),
+                },
+                'tags': {
+                    '$elemMatch': self.tag
+                }
+            },
+            {'pmid': 1}
+        )
+        return [
+            article['pmid']
+            for article in articles
+        ]
 
-  return tokens
+    def _get_rp_pmids(self, pmids):
+        return [
+            article['pmid']
+            for article in report
+            if article['pmid'] in pmids
+                and re.search(self.rp_value, article[self.rp_column])
+        ]
 
-def articles_to_mallet(outname, method):
-  
-  # Open output file
-  if method == 'onefile':
-    outfile = open(outname, 'w')
+    @staticmethod
+    def _nonzero(value, precision=0.001):
+        return max(
+            precision,
+            min(
+                1 - precision,
+                value
+            )
+        )
 
-  # Read report
-  report = rp.ezread()
-  
-  # Get articles in both report and NeuroTrends
-  arts = [
-    art for art in report
-    if art['proc-slicetime-bool'] in ['TRUE', 'FALSE', 'missing']
-    and session.query(Article).filter(Article.pmid == art['pmid']).count()
-  ]
-  
-  # Initialize return list
-  out = []
+    def validate(self, no_supplement=False):
 
-  # Process articles
-  for art in arts:
-    
-    print 'Working on article %s...' % (art['pmid'])
+        _pmids = pmids_no_supplement if no_supplement else pmids
 
-    # Get tokens
-    tokens = preproc(toart(art['pmid']))
-    
-    # Skip if no tokens found
-    if not tokens:
-      continue
-    
-    # Write PMID, label, and tokens to output file
-    if method == 'onefile':
-      outrow = [art['pmid'], art['proc-slicetime-bool']] + tokens
-      outtext = ' '.join(outrow)
-      outtext = outtext.encode('ascii', 'ignore')
-      outfile.write(outtext)
-    elif method == 'manyfiles':
-      outpath = '%s/%s' % (outname, art['proc-slicetime-bool'])
-      if not os.path.exists(outpath):
-        os.makedirs(outpath)
-      outfile = open('%s/%s.txt' % (outpath, art['pmid']), 'w')
-      outtext = ' '.join(tokens)
-      outtext = outtext.encode('ascii', 'ignore')
-      outfile.write(outtext)
-      outfile.close()
+        nt_pmids = set(self._get_nt_pmids(_pmids))
+        rp_pmids = set(self._get_rp_pmids(_pmids))
 
-    out.append({
-      'pmid' : art['pmid'],
-      'stc' : art['proc-slicetime-bool'],
-      'tokens' : ' '.join(tokens),
-    })
+        true_pos = nt_pmids.intersection(rp_pmids)
+        false_pos = nt_pmids.difference(rp_pmids)
 
-  # Close output file
-  if method == 'onefile':
-    outfile.close()
+        nt_neg = _pmids.difference(nt_pmids)
+        rp_neg = _pmids.difference(rp_pmids)
 
-  return out
+        true_neg = nt_neg.intersection(rp_neg)
+        false_neg = rp_pmids.difference(nt_pmids)
 
-def makecolfun(ptn):
-  
-  fun = lambda txt: bool(re.search(ptn, txt, re.I))
-  return fun
+        if not true_pos and not false_pos:
 
-def maketaginfo(supname, tagname, colname, colptn=None):
+            dprime = None
 
-  info = {
-    'db' : gettags(supname, tagname, rettype='attrib'),
-    'rep' : colname,
-  }
-
-  if colptn:
-    info['repfun'] = makecolfun(colptn)
-
-  return info
-
-tagmap = {
-  
-  # Design
-  'event' : maketaginfo('des', 'event', 'des-edes-destype', colptn='event'),
-  'block' : maketaginfo('des', 'block', 'des-edes-destype', colptn='block'),
-  'mixed' : maketaginfo('des', 'mixed', 'des-edes-destype', colptn='mixed'),
-
-  # Basis
-  'hrf' : maketaginfo('mod', 'hrf', 'mod-smod-basis', colptn='hrf'),
-  'tmpdrv' : maketaginfo('mod', 'tmpdrv', 'mod-smod-basis', colptn='td'),
-  'dspdrv' : maketaginfo('mod', 'dspdrv', 'mod-smod-basis', colptn='disp'),
-  'fir' : maketaginfo('mod', 'fir', 'mod-smod-basis', colptn='fir'),
-
-  # Processing
-  'evtopt' : maketaginfo('proc', 'desopt', 'des-edes-eventopt-optmethod'),
-  'stc' : maketaginfo('proc', 'stc', 'proc-slicetime-bool'),
-  'realign' : maketaginfo('proc', 'realign', 'proc-mc-bool'),
-  'coreg' : maketaginfo('proc', 'coreg', 'proc-coreg-bool'),
-  'strip' : maketaginfo('proc', 'strip', 'proc-skullstrip-bool'),
-  'norm' : maketaginfo('proc', 'norm', 'proc-norm-bool'),
-  'spatsmoo' : maketaginfo('proc', 'spatsmoo', 'proc-smooth-bool'),
-  'filter' : maketaginfo('proc', 'filter', 'mod-smod-filter-bool'),
-  'acf' : maketaginfo('proc', 'autocorr', 'mod-smod-acf-bool'),
-  'roi' : maketaginfo('tech', 'roi', 'mod-roi-bool'),
-  'motreg' : maketaginfo('proc', 'motreg', 'mod-smod-regress', colptn='movement params'),
-  
-  # Multiple comparison correction
-  'fdr' : maketaginfo('mcc', 'fdr', 'mod-gmod-mccorrect-mccmethod', 
-    colptn='fdr'),
-  'bon' : maketaginfo('mcc', 'bon', 'mod-gmod-mccorrect-mccmethod',
-    colptn='bonferroni'),
-  'monte' : maketaginfo('mcc', 'monte', 'mod-gmod-mccorrect-mccmethod', 
-    colptn='(monte carlo|alphasim)'),
-  'rft' : {
-    'db' : gettags('mcc', 'rft', rettype='attrib') +
-           gettags('mcc', 'fwe', rettype='attrib'),
-    'rep' : 'mod-gmod-mccorrect-mccmethod',
-    'repfun' : makecolfun('fwe|rft'),
-  },
-
-  # Software packages
-  'spm' : maketaginfo('pkg', 'spm', 'misc-softpck', 
-    colptn='spm'),
-  'fsl' : maketaginfo('pkg', 'fsl', 'misc-softpck', 
-    colptn='fsl'),
-  'afni' : maketaginfo('pkg', 'afni', 'misc-softpck', 
-    colptn='afni'),
-  'voyager' : maketaginfo('pkg', 'voyager', 'misc-softpck', 
-    colptn='voyager'),
-  'freesurfer' : maketaginfo('pkg', 'freesurfer', 'misc-softpck', 
-    colptn='freesurfer'),
-
-  # Task packages
-  'eprime' : maketaginfo('task', 'eprime', 'des-edes-taskprog',
-    colptn='eprime'),
-  'presentation' : maketaginfo('task', 'presentation', 'des-edes-taskprog',
-    colptn='presentation'),
-  'cogent' : maketaginfo('task', 'cogent', 'des-edes-taskprog',
-    colptn='cogent'),
-  'psyscope' : maketaginfo('task', 'psyscope', 'des-edes-taskprog',
-    colptn='psyscope'),
-  'psychtoolbox' : maketaginfo('task', 'psychtoolbox', 'des-edes-taskprog',
-    colptn='psychtoolbox'),
-
-}
-
-for version in ['99', '2', '5', '8']:
-  tag_name = 'spm%s' % (version)
-  tagmap[tag_name] = {
-    'db' : gettags('pkg', 'spm', tagver=version, rettype='attrib') + \
-        gettags('pkg', 'spm', tagver=version+'b', rettype='attrib'),
-    'rep' : 'misc-softcom',
-    'repfun' : makecolfun('spm %s' % (version)),
-  }
-
-truth_map = {
-  'TRUE' : True,
-  'FALSE': False,
-  'missing' : False,
-  'n/a' : False,
-}
-
-def validate(check_method='db'):
-  
-  # Read article report
-  report = rp.ezread()
-  
-  articles = []
-  results = {}
-
-  for rep_article in report:
-    
-    # Get PubMed ID
-    pmid = rep_article['pmid']
-
-    print 'Working on article %s...' % (pmid)
-    
-    # Get article from database
-    db_article = session.query(Article)\
-      .filter(Article.pmid==pmid)\
-      .first()
-    
-    # Continue if article not found
-    if not db_article:
-      continue
-    
-    if check_method == 'files':
-
-      # Read files
-      htmltxt = loadhtml(db_article)
-      pdftxt = loadpdf(db_article)
-      
-      # Continue if files not found
-      if not htmltxt and not pdftxt:
-        continue
-
-    elif check_method == 'db':
-      
-      # Continue if files not in database
-      if not db_article.htmlfile and not db_article.pdfrawfile:
-        continue
-
-    print 'Found article %s...' % (pmid)
-    
-    articles.append(pmid)
-
-    for tagname in tagmap:
-      
-      # Get tag info
-      tag = tagmap[tagname]
-      
-      # Continue if database attrib not found
-      if not tag['db']:
-        continue
-
-      # Get database value
-      db_tag = any([attrib in db_article.attribs for attrib in tag['db']])
-
-      # Get report value
-      rep_tag = rep_article[tag['rep']]
-      if 'repfun' in tag:
-        rep_tag = tag['repfun'](rep_tag)
-      else:
-        if rep_tag in truth_map:
-          rep_tag = truth_map[rep_tag]
         else:
-          rep_tag = True
-      
-      if tagname not in results:
-        results[tagname] = []
 
-      results[tagname].append((db_tag, rep_tag))
-  
-  # Summarize results
-  summary = {}
+            phit, pfal = [self._nonzero(0)] * 2
 
-  for tagname in results.keys():
-    
-    tp = len([res for res in results[tagname] if res == (True, True)])
-    fp = len([res for res in results[tagname] if res == (True, False)])
-    fn = len([res for res in results[tagname] if res == (False, True)])
-    tn = len([res for res in results[tagname] if res == (False, False)])
+            if true_pos:
+                phit = self._nonzero(
+                    len(true_pos) / (len(true_pos) + len(false_neg))
+                )
 
-    phit = float(tp) / (tp + fn)
-    if phit == 0:
-      phit = 0.001
-    elif phit == 1:
-      phit = 1 - 0.001
-    pfal = float(fp) / (tn + fp)
-    if pfal == 0:
-      pfal = 0.001
-    elif pfal == 1:
-      pfal = 1 - 0.001
-    dp = norm.ppf(phit) - norm.ppf(pfal)
+            if len(false_pos):
+                pfal = self._nonzero(
+                    len(false_pos) / (len(true_neg) + len(false_pos))
+                )
 
-    summary[tagname] = {
-      'tp' : tp,
-      'fp' : fp,
-      'fn' : fn,
-      'tn' : tn,
-      'phit' : phit,
-      'pfal' : pfal,
-      'dp' : dp,
+            dprime = norm.ppf(phit) - norm.ppf(pfal)
+
+        return {
+            'true_pos': true_pos,
+            'false_pos': false_pos,
+            'true_neg': true_neg,
+            'false_neg': false_neg,
+            'dprime': dprime,
+        }
+
+
+validators = {
+
+    # Software packages
+    'spm':     Validator({'label': 'spm'}, 'misc-softpck', 'spm'),
+    'fsl':     Validator({'label': 'fsl'}, 'misc-softpck', 'fsl'),
+    'afni':    Validator({'label': 'afni'}, 'misc-softpck', 'afni'),
+    'voyager': Validator({'label': 'voyager'}, 'misc-softpck', 'voyager'),
+    'surfer':  Validator({'label': 'surfer'}, 'misc-softpck', 'freesurfer'),
+
+    # Software versions
+    'spm96': Validator({'label': 'spm', 'version': '96'}, 'misc-softcom', 'spm 96'),
+    'spm99': Validator({'label': 'spm', 'version': '99'}, 'misc-softcom', 'spm 99'),
+    'spm2':  Validator({'label': 'spm', 'version': '2'}, 'misc-softcom', 'spm 2'),
+    'spm5':  Validator({'label': 'spm', 'version': '5'}, 'misc-softcom', 'spm 5'),
+    'spm8':  Validator({'label': 'spm', 'version': '8'}, 'misc-softcom', 'spm 8'),
+
+    # Design
+    'event': Validator({'label': 'event'}, 'des-edes-destype', 'event'),
+    'block': Validator({'label': 'block'}, 'des-edes-destype', 'block'),
+    'mixed': Validator({'label': 'mixed'}, 'des-edes-destype', 'mixed'),
+
+    # Basis functions
+    'hrf':    Validator({'label': 'hrf'}, 'mod-smod-basis', 'hrf'),
+    'tmpdrv': Validator({'label': 'tmpdrv'}, 'mod-smod-basis', 'td'),
+    'dspdrv': Validator({'label': 'dspdrv'}, 'mod-smod-basis', 'disp'),
+    'fir':    Validator({'label': 'fir'}, 'mod-smod-basis', 'fir'),
+
+    # Processing
+    'evtopt':   Validator({'label': 'desopt'}, 'des-edes-eventopt-bool'),
+    'stc':      Validator({'label': 'stc'}, 'proc-slicetime-bool'),
+    'realign':  Validator({'label': 'realign'}, 'proc-mc-bool'),
+    'coreg':    Validator({'label': 'coreg'}, 'proc-coreg-bool'),
+    'strip':    Validator({'label': 'strip'}, 'proc-skullstrip-bool'),
+    'norm':     Validator({'label': 'norm'}, 'proc-norm-bool'),
+    'spatsmoo': Validator({'label': 'spatsmoo'}, 'proc-smooth-bool'),
+    'filter':   Validator({'label': 'filter'}, 'mod-smod-filter-bool'),
+    'acf':      Validator({'label': 'autocorr'}, 'mod-smod-acf-bool'),
+    'roi':      Validator({'label': 'roi'}, 'mod-roi-bool'),
+    'motreg':   Validator({'label': 'motreg'}, 'mod-smod-regress', 'movement params'),
+
+    # Multiple comparison correction
+    'fdr':      Validator({'label': 'fdr'}, 'mod-gmod-mccorrect-mccmethod', 'fdr'),
+    'fwe':      Validator({'label': 'fwe'}, 'mod-gmod-mccorrect-mccmethod', 'fwe'),
+    'bon':      Validator({'label': 'bon'}, 'mod-gmod-mccorrect-mccmethod', 'bon'),
+    'alphasim': Validator({'label': 'alphasim'}, 'mod-gmod-mccorrect-mccmethod', 'alphasim'),
+
+    # Task presentation software
+    'eprime':       Validator({'label': 'eprime'}, 'des-edes-taskprog', 'eprime'),
+    'presentation': Validator({'label': 'presentation'}, 'des-edes-taskprog', 'presentation'),
+    'cogent':       Validator({'label': 'cogent'}, 'des-edes-taskprog', 'cogent'),
+    'psyscope':     Validator({'label': 'psyscope'}, 'des-edes-taskprog', 'psyscope'),
+    'psychtoolbox': Validator({'label': 'psychtoolbox'}, 'des-edes-taskprog', 'psychtoolbox'),
+
+}
+
+def validate(no_supplement=False):
+
+    results = {
+        name: validator.validate(no_supplement=no_supplement)
+        for name, validator in validators.iteritems()
     }
-    
-  return articles, results, summary
+    return results
 
-def batchplotvalidate(summary):
-  
-  plotstat(summary, 'dp', "d'", saveplot=True)
-  plotstat(summary, 'phit', 'Proportion Hits', saveplot=True)
-  plotstat(summary, 'pfal', 'Proportion False Alarms', saveplot=True)
+def rp_select(pmid):
+    for row in report:
+        if row['pmid'] == pmid:
+            return row
 
-def plotstat(summary, statname, statlong='', saveplot=False):
-  
-  if not statlong:
-    statlong = statname
+def nt_select(pmid):
+    return mongo['article'].find_one({'pmid': pmid})
 
-  stat = [summary[s][statname] for s in summary]
-  df = ro.DataFrame({
-    'stat' : ro.FloatVector(stat),
-  })
+# Extractors
 
-  gp = ggplot2.ggplot(df) + \
-    ggplot2.aes(x='stat') + \
-    ggplot2.geom_histogram() + \
-    ggplot2.opts(title='Validation Performance') + \
-    ro.r.labs(x=statlong, y='Count')
+def rp_extract_smooth_kernel(item):
+    raw = item.get('proc-smooth-kernel', '')
+    if 'mm fwhm' in raw:
+        value = raw.split('mm fwhm')[0]
+        try:
+            return float(value)
+        except ValueError:
+            pass
 
-  # Set font sizes
-  gp += ro.r('opts(plot.title=theme_text(size=24))')
-  gp += ro.r('opts(axis.title.x=theme_text(size=18))')
-  gp += ro.r('opts(axis.text.x=theme_text(size=14))')
-  gp += ro.r('opts(axis.title.y=theme_text(size=18, angle=90, vjust=0.33))')
-  gp += ro.r('opts(axis.text.y=theme_text(size=14, angle=90))')
+def nt_extract_smooth_kernel(item):
+    for tag in item['tags']:
+        if tag['label'] == 'smooth_kernel':
+            return tag['value']
 
-  gp.plot()
+def rp_extract_highpass_cutoff(item):
+    if item['mod-smod-filter-filttype'] != 'high-pass':
+        return
+    raw = item.get('mod-smod-filter-filtband', '').lower()
+    if 'hz' in raw:
+        value = raw.split('hz')[0]
+        try:
+            return 1 / float(value)
+        except ValueError:
+            return
+    elif re.search(r'^\d.*?s$', raw):
+        value = raw.strip('s')
+        try:
+            return float(value)
+        except ValueError:
+            return
 
-  if saveplot:
-    ro.r.ggsave('%s/misc/%s.pdf' % (figdir, statname))
+def nt_extract_highpass_cutoff(item):
+    for tag in item['tags']:
+        if tag['label'] == 'highpass_cutoff':
+            return tag['value']
+
+def validate_continuous(rp_extract, nt_extract):
+
+    valid_pmids = []
+    rp_values, nt_values = [], []
+
+    for pmid in pmids:
+
+        rp_data = rp_select(pmid)
+        if not rp_data:
+            continue
+        rp_value = rp_extract(rp_data)
+
+        nt_data = nt_select(pmid)
+        if not nt_data:
+            continue
+        nt_value = nt_extract(nt_data)
+
+        if rp_value and nt_value:
+            valid_pmids.append(pmid)
+            rp_values.append(rp_value)
+            nt_values.append(nt_value)
+
+    return valid_pmids, rp_values, nt_values
+
+def format_continuous_validation(rp_values, nt_values):
+    rval, pval = pearsonr(rp_values, nt_values)
+    return 'r({df}) = {rval:.04f}; p = {pval:.04f}'.format(
+        df=len(rp_values)-2,
+        rval=rval,
+        pval=pval,
+    )
+
+def validate_hist(values, xlabel=None, outname=None):
+
+    ax = plt.hist(values)
+
+    if xlabel:
+        ax.set_xlabel(xlabel)
+
+    if outname:
+        plt.savefig(outname)

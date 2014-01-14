@@ -4,9 +4,20 @@ from BeautifulSoup import UnicodeDammit
 
 # Project imports
 import neurotrends as nt
-from neurotrends import trenddb
+#from neurotrends import trenddb
 #from trenddb import *
 from trendpath import *
+
+import os, errno
+
+# From http://stackoverflow.com/questions/600268/mkdir-p-functionality-in-python
+def mkdir_p(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 def short_name(full_path):
     return os.path.split(full_path)[-1]
@@ -18,32 +29,32 @@ def file_path(pmid, file_type, file_info):
         file_info[file_type]['file_ext']
     )
 
-def to_unicode(s):
-    return UnicodeDammit(s).unicode
-
-def toart(art):
-    '''
-    Convert PubMed ID or Article to Article
-    Arguments:
-        art (str/Article): PubMed ID or Article object
-    '''
-    
-    # Convert PubMed ID to Article
-    if type(art) in [str, unicode]:
-        return nt.session.query(trenddb.Article).\
-            filter_by(pmid=art).\
-            one()
-    
-    # Return Article
-    return art
-
-def urlclean(url):
-
-    url = url.replace('&lt;', '<')
-    url = url.replace('&gt;', '>')
-    url = url.replace(' ', '%20')
-
-    return url
+#def to_unicode(s):
+#    return UnicodeDammit(s).unicode
+#
+#def toart(art):
+#    '''
+#    Convert PubMed ID or Article to Article
+#    Arguments:
+#        art (str/Article): PubMed ID or Article object
+#    '''
+#
+#    # Convert PubMed ID to Article
+#    if type(art) in [str, unicode]:
+#        return nt.session.query(trenddb.Article).\
+#            filter_by(pmid=art).\
+#            one()
+#
+#    # Return Article
+#    return art
+#
+#def urlclean(url):
+#
+#    url = url.replace('&lt;', '<')
+#    url = url.replace('&gt;', '>')
+#    url = url.replace(' ', '%20')
+#
+#    return url
 
 def retry(f, ntry, delay, *args, **kwargs):
     """

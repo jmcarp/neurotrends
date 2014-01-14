@@ -1,72 +1,94 @@
-cat = 'tool'
+category = 'tool'
 
-# Import base
-from base import *
+from neurotrends.tagger import Looks, RexTagger, RexComboVersionTagger
 
-###############
-# Define tags #
-###############
+from .misc import delimiter, version_separator
 
-tags = {}
+# Ignore alphanumeric characters or a dot followed by a number after version
+# to avoid e.g. counting "eprime 1.1" as both eprime 1 and eprime 1.1
+eprime = RexComboVersionTagger(
+    'eprime',
+    [
+        r'\We{dlm}prime'.format(dlm=delimiter),
+    ],
+    version_separator,
+    looks=Looks(negahead=r'(\w|\.[1-9])'),
+    versions=[
+        '1', '1.1', '1.2', '2',
+    ],
+)
 
-tags['eprime'] = {
-  'bool' : [
-    '\We%sprime' % (delimptn),
-  ],
-}
+presentation = RexTagger(
+    'presentation',
+    [
+        r'neuro{dlm}bs'.format(dlm=delimiter),
+        r'neuro{dlm}behavioral{dlm}systems'.format(dlm=delimiter),
+    ]
+)
 
-tags['presentation'] = {
-  'bool' : [
-    'neuro%sbs' % (delimptn),
-    'neuro%sbehavioral%ssystems' % delimrep(2),
-  ],
-}
-
-tags['ptb'] = [
+psychtoolbox = RexTagger(
     'psychtoolbox',
-    'psychophysics%stoolbox' % (delimptn),
-]
+    [
+        r'psychtoolbox',
+        r'psychophysics{dlm}toolbox'.format(dlm=delimiter),
+    ]
+)
 
-tags['psychopy'] = [
-  '\Wpsychopy\W',
-]
+psychopy = RexTagger(
+    'psychopy',
+    [
+        r'\Wpsychopy\W',
+    ]
+)
 
-tags['visionegg'] = [
-  'vision%segg' % (delimptn),
-]
+visionegg = RexTagger(
+    'visionegg',
+    [
+        r'vision{dlm}egg'.format(dlm=delimiter),
+    ]
+)
 
-tags['directrt'] = [
-  'directrt',
-]
+directrt = RexTagger(
+    'directrt',
+    [
+        r'directrt',
+    ]
+)
 
-tags['stim'] = [
-  '\Wstim\W.{,50}neuro%sscan' % (delimptn),
-]
+stim = RexTagger(
+    'stim',
+    [
+        r'\Wstim\W.{{,50}}neuro{dlm}scan'.format(dlm=delimiter),
+    ]
+)
 
-tags['inquisit'] = [
-  'inquisit[^a-z]',
-]
+inquisit = RexTagger(
+    'inquisit',
+    [
+        r'inquisit[^a-z]',
+    ]
+)
 
-tags['cogent'] = [
-  'cogent.{,50}(?:vislab|wellcome)',
-  'cogent.{,50}(?<!\w)fil(?!\w)',
-  'cogent(?:_2000)?\.(?:html|php)',
-  'cogent%s2000' % (verfill),
-]
+cogent = RexTagger(
+    'cogent',
+    [
+        r'cogent.{{,50}}(?:vislab|wellcome)',
+        r'cogent.{{,50}}(?<!\w)fil(?!\w)',
+        r'cogent(?:_2000)?\.(?:html|php)',
+        r'cogent{ver}2000'.format(ver=version_separator),
+    ]
+)
 
-tags['psyscope'] = [
-  'psyscope',
-]
+psyscope = RexTagger(
+    'psyscope',
+    [
+        r'psyscope',
+    ]
+)
 
-tags['superlab'] = [
-  'superlab',
-]
-
-################
-# Add versions #
-################
-
-# Add E-Prime versions
-eprimevers = ['1', '1.1', '1.2', '2']
-tags['eprime'] = makever('eprime', tags['eprime'], eprimevers,
-  escchars='.', negahead='(\w|\.[1-9])')
+superlab = RexTagger(
+    'superlab',
+    [
+        r'superlab',
+    ]
+)

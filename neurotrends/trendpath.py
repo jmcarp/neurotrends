@@ -1,16 +1,15 @@
-'''
+"""
 Set up paths for NeuroTrends.
-'''
+"""
 
-# Imports
 import os
-import re
 
-# Project imports
 import neurotrends
+from util import mkdir_p
 
 # Get home directory
-home_dir = os.path.dirname(neurotrends.__file__)
+home_file = os.path.dirname(neurotrends.__file__)
+home_dir = os.path.abspath(os.path.split(home_file)[0])
 
 # Get sub-directories
 data_dir = '%s/data' % (home_dir)
@@ -30,9 +29,12 @@ file_dirs = {
     'pmc' : { 'file_ext' : 'html' },
 }
 
-# Add directories to file_dirs
-for file_type in file_dirs:
-    dir_path = '%s/%s' % (dumpdir, file_type)
-    file_dirs[file_type]['base_path'] = dir_path
-    if not os.path.exists(dir_path):
-        os.mkdir(dir_path)
+for dir in [data_dir, log_dir, fig_dir]:
+    mkdir_p(dir)
+
+## Add directories to file_dirs
+#for file_type in file_dirs:
+#    dir_path = '%s/%s' % (dumpdir, file_type)
+#    file_dirs[file_type]['base_path'] = dir_path
+#    if not os.path.exists(dir_path):
+#        os.mkdir(dir_path)

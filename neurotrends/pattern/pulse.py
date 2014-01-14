@@ -1,77 +1,112 @@
-cat = 'tool'
+category = 'tool'
 
-# Import base
-from base import *
+from neurotrends.config import re
+from neurotrends.tagger import RexTagger, MultiRexTagger
 
-# Check spiral
-priptn_spiral = [
-  'spiral',
-]
-secptn_spiral = [
-  'mri',
-  'bold',
-  'imag',
-  'scan',
-  'data',
-  'pulse',
-  'acqui',
-  'sequence',
-]
-def checkspiral(txt, **conargs):
-  return contextsearch(txt, priptn_spiral, secptn_spiral, ichar='.', **conargs)
+from misc import delimiter
 
+### Sequences ###
 
-tags = {}
+mprage = RexTagger(
+    'mprage',
+    [
+        r'\Wmp{dlm}rage\W'.format(dlm=delimiter),
+    ]
+)
 
-# Structural
-tags['mprage'] = [
-  '\Wmp%srage\W' % (delimptn),
-]
+spgr = RexTagger(
+    'spgr',
+    [
+        r'\Wspgr\W',
+    ]
+)
 
-tags['spgr'] = [
-  '\Wspgr\W',
-]
+### Trajectories ###
 
-# Trajectory
-tags['epi'] = [
-  'echo%splanar' % (delimptn),
-  re.compile('EPI'),
-]
+epi = RexTagger(
+    'epi',
+    [
+        r'echo{dlm}planar'.format(dlm=delimiter),
+        re.compile(r'EPI'),
+    ]
+)
 
-tags['spiral'] = [
-  'spiral%sin\W' % (delimptn),
-  'spiral%sout\W' % (delimptn),
-  checkspiral,
-]
+spiral = RexTagger(
+    'spiral',
+    [
+        r'spiral{dlm}in'.format(dlm=delimiter),
+        r'spiral{dlm}out'.format(dlm=delimiter),
+    ]
+)
 
-# Sequence
-tags['gradient'] = [
-  'gradient%secho' % (delimptn),
-  'gradient%srecall(?:ed)?' % (delimptn),
-]
+spiral_context = MultiRexTagger(
+    'spiral',
+    [
+        r'spiral',
+    ],
+    [
+        r'mri',
+        r'bold',
+        r'imag',
+        r'scan',
+        r'data',
+        r'pulse',
+        r'acqui',
+        r'sequence',
+    ],
+    separator='[^.,:;?]*'
+)
 
-tags['spin'] = [
-  'spin%secho' % (delimptn),
-]
+### Sequences ###
 
-tags['grase'] = [
-  re.compile('GRASE'),
-]
+gradient = RexTagger(
+    'gradient',
+    [
+        r'gradient{dlm}echo'.format(dlm=delimiter),
+        r'gradient{dlm}recall'.format(dlm=delimiter),
+    ]
+)
 
-# Acceleration method
-tags['sense'] = [
-  re.compile('SENSE'),
-  'sensitivity%sencoded' % (delimptn),
-]
+spin = RexTagger(
+    'spin',
+    [
+        r'spin{dlm}echo'.format(dlm=delimiter),
+    ]
+)
 
-tags['grappa'] = [
-  re.compile('GRAPPA'),
-]
+grase = RexTagger(
+    'grase',
+    [
+        re.compile(r'GRASE'),
+    ]
+)
+### Acceleration methods ###
 
-tags['presto'] = [
-  re.compile('PRESTO'),
-]
+sense = RexTagger(
+    'sense',
+    [
+        re.compile(r'SENSE'),
+        r'sensitivity{dlm}encoded'.format(dlm=delimiter),
+    ]
+)
 
-tags['smash'] = [
-  re.compile('SMASH'),
-]
+grappa = RexTagger(
+    'grappa',
+    [
+        re.compile(r'GRAPPA'),
+    ]
+)
+
+presto = RexTagger(
+    'presto',
+    [
+        re.compile(r'PRESTO'),
+    ]
+)
+
+smash = RexTagger(
+    'smash',
+    [
+        re.compile(r'SMASH'),
+    ]
+)

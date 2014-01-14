@@ -1,75 +1,72 @@
-'''
+category = 'tool'
 
-'''
-
-cat = 'tool'
-
-# Imports
 import os
 import shelve
 
-# Project imports
+from neurotrends.config import re
+from neurotrends.tagger import Looks, RexTagger, RexComboVersionTagger
+from misc import delimiter, version_separator
 from neurotrends import trendpath
 
-# Import base
-from base import *
+python = RexTagger(
+    'python', [r'python']
+)
 
-# Initialize tags
-tags = {}
+java = RexTagger(
+    'java',
+    [
+        r'java(?!{dlm}script)'.format(dlm=delimiter),
+    ]
+)
 
-tags['matlab'] = {
-    'bool' : [
-        'matlab',
-    ],
-}
+rlang = RexTagger(
+    'rlang',
+    [
+        r'\Wr{dlm}project'.format(dlm=delimiter),
+        r'\Wr{dlm}development{dlm}(core)?{dlm}team'.format(dlm=delimiter),
+        r'''
+            \Wr{dlm}foundation{dlm}for{dlm}statistical{dlm}computing
+        '''.format(dlm=delimiter),
+        r'''
+            (software|programming){dlm}(language|environment){dlm}r(?!\w)
+        '''.format(dlm=delimiter),
+        r'''
+            \Wr{dlm}(software|programming){dlm}(language|senvironment)
+        '''.format(dlm=delimiter),
+        r'\Wr{dlm}statistical'.format(dlm=delimiter),
+        r'\Wr{dlm}software'.format(dlm=delimiter),
+        r'\Wr{dlm}library'.format(dlm=delimiter),
+    ]
+)
 
-tags['python'] = [
-    'python',
-]
+idl = RexTagger(
+    'idl',
+    [
+        r'\Widl\W',
+        r'interactive{dlm}data{dlm}language'.format(dlm=delimiter),
+    ]
+)
 
-tags['java'] = [
-    'java(?!%sscript)' % (delimptn),
-]
+fortran = RexTagger(
+    'fortran', [r'fortran']
+)
 
-tags['r'] = [
-    '\Wr%sproject' % (delimptn),
-    '\Wr%sdevelopment%s(?:core)?%steam' % delimrep(3),
-    '\Wr%sfoundation%sfor%sstatistical%scomputing' % delimrep(4),
-    '(?:software|programming)%s(?:language|environment)%sr(?!\w)' % delimrep(2),
-    '\Wr%s(?:software|programming)%s(?:language|senvironment)' % delimrep(2),
-    '\Wr%sstatistical' % (delimptn),
-    '\Wr%ssoftware' % (delimptn),
-    '\Wr%slibrary' % (delimptn),
-]
-
-tags['idl'] = [
-    '\Widl\W',
-    'interactive%sdata%slanguage' % delimrep(2),
-]
-
-tags['fortran'] = [
-    'fortran',
-]
-
-################
-# Add versions #
-################
+octave = RexTagger(
+    'octave', [r'octave']
+)
 
 import requests
-from BeautifulSoup import BeautifulSoup as BS
+from bs4 import BeautifulSoup
 
 def get_matlab_versions(overwrite=False):
-    '''Get MATLAB versions from Wikipedia.
+    """Get MATLAB versions from Wikipedia.
 
-    Args:
-        overwrite (bool) : Overwrite existing data
-    Returns:
-        Dictionary of MATLAB versions
+    :param overwrite: Overwrite existing data?
+    :return: MATLAB versions
         
-    '''
-    
+    """
     # Get version file
-    version_file = '%s/matlab-versions.shelf' % (trendpath.data_dir)
+    version_file = os.path.join(trendpath.data_dir, 'matlab-versions.shelf')
 
     # Used saved versions if version file exists and not overwrite
     if os.path.exists(version_file) and not overwrite:
@@ -80,36 +77,44 @@ def get_matlab_versions(overwrite=False):
 
     # Open Wikipedia page
     req = requests.get('http://en.wikipedia.org/wiki/MATLAB')
-    soup = BS(req.text)
+    soup = BeautifulSoup(req.text)
 
-    # Find Release History table
-    histtxt = soup.find(text=re.compile('release history', re.I))
-    histspn = histtxt.findParent('span')
-    histtab = histspn.findNext('table', {'class' : 'wikitable'})
-    histrow = histtab.findAll('tr')
+    # Find "Release History" table
+    history_text = soup.find(text=re.compile(r'release history', re.I))
+    history_span = history_text.findParent('span')
+    history_table = history_span.findNext('table', {'class': 'wikitable'})
+    history_row = history_table.findAll('tr')
     
     # Initialize Matlab versions
     versions = {}
 
-    for row in histrow[1:]:
+    for row in history_row[1:]:
         
         # Get <td> elements
         tds = row.findAll('td')
 
         # Get version number
-        vernum = tds[0].text
-        vernum = re.sub('matlab\s+', '', vernum, flags=re.I)
+        version_number = tds[0].text
+        version_number = re.sub(r'matlab\s+', '', version_number, flags=re.I)
 
         # Get version name
-        vernam = tds[1].text
-        vernam = re.sub('r', 'r?', vernam, flags=re.I)
-        vernam = re.sub('sp', '%s(?:sp|service pack)%s' % delimrep(2), \
-            vernam, flags=re.I)
+        version_name = tds[1].text
+
+        # Make "r" in e.g. "r2007a" optional
+        version_name = re.sub('r', 'r?', version_name, flags=re.I)
+
+        # "Service Pack" -> "sp"
+        version_name = re.sub(
+            r'{dlm}(sp|service pack){dlm}'.format(dlm=delimiter),
+            'sp',
+            version_name,
+            flags=re.I
+        )
 
         # Add to versions
-        versions[vernum] = [vernum]
-        if vernam:
-            versions[vernum].append(vernam)
+        versions[version_number] = [version_number]
+        if version_name:
+            versions[version_number].append(version_name)
     
     # Save results to version file
     shelf = shelve.open(version_file)
@@ -119,9 +124,17 @@ def get_matlab_versions(overwrite=False):
     # Return versions
     return versions
 
-# Add Matlab versions
-matvers = get_matlab_versions()
-matnegahead = '(\d|\.[1-9]|st|nd|rd|th)'
-#matnegahead = '(a-z|\.[1-9])'
-tags['matlab'] = makever('matlab', tags['matlab'], matvers,
-    escchars='.', negahead=matnegahead)
+
+matlab_versions = get_matlab_versions()
+
+matlab = RexComboVersionTagger(
+    'matlab',
+    [
+        r'matlab',
+    ],
+    version_separator,
+    # Only match against complete versions; e.g., don't confuse "matlab r14"
+    # with "matlab r1"
+    looks=Looks(negahead=r'(\d|\.[1-9]|st|nd|rd|th)'),
+    versions=matlab_versions,
+)
