@@ -2,8 +2,6 @@
 
 """
 
-import datetime
-
 from neurotrends import pattern
 from neurotrends.config import mongo
 
@@ -30,7 +28,7 @@ ranks_spm = order.analyze_rank_order(summary, mongo['article'], {'tags.label': '
 ranks_fsl = order.analyze_rank_order(summary, mongo['article'], {'tags.label': 'fsl'})
 ranks_afni = order.analyze_rank_order(summary, mongo['article'], {'tags.label': 'afni'})
 
-seqplot.rank_plot(ranks, outname=file_name(['seq']))
+seqplot.rank_plot(ranks, outname=file_name(['seq'], path='seq'))
 
 seqplot.multi_rank_plot(
     ranks,
@@ -44,7 +42,7 @@ seqplot.multi_rank_plot(
         ranks_fsl,
         ranks_afni,
     ],
-    outname=file_name(['seq', 'pkg'])
+    outname=file_name(['seq', 'pkg'], path='seq')
 )
 
 #years = range(2000, 2014)
@@ -67,5 +65,5 @@ seqplot.multi_rank_plot(
 #    ranks,
 #    years,
 #    ranks_year,
-#    outname=file_name(['seq', 'year'])
+#    outname=file_name(['seq', 'year'], path='seq')
 #)

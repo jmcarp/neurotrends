@@ -58,7 +58,7 @@ class Document(StoredObject):
         self.extract_filepath = filepath
         self.extracted = True
 
-        for key, value in kwargs:
+        for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
         open(filepath, 'w').write(

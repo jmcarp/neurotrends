@@ -1,6 +1,8 @@
 import re
 from pymongo import MongoClient
 
+DATES = range(2000, 2014)
+
 mongo = MongoClient()['neurotrends']
 
 query = '''

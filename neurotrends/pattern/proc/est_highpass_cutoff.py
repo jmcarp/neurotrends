@@ -87,7 +87,7 @@ def est_highpass_cutoff(txt):
     """
     cutoffs = []
 
-    ctxt = re.sub('[():=]', '', txt)
+    ctxt = re.sub(r'[():=]', '', txt)
 
     for ptn in highpass_filter_bool_ptn:
 

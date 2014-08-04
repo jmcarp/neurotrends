@@ -228,7 +228,7 @@ norm_primary = [
     r'regist',
     r'transform',
     r'warp',
-    r're{dlm}ampl'.format(dlm=delimiter),
+    r'align',
 ]
 
 norm_context_v1 = MultiRexTagger(
@@ -240,11 +240,13 @@ norm_context_v1 = MultiRexTagger(
         r'stereota',
         r'talairach',
         r'mni',
+        r'common{dlm}brain'.format(dlm=delimiter),
         r'standard{dlm}image'.format(dlm=delimiter),
         r'standard{dlm}space'.format(dlm=delimiter),
         r'montreal{dlm}neurological{dlm}institute'.format(dlm=delimiter),
     ],
     separator='[^.,:;?]*',
+    nchar=150,
 )
 
 norm_context_v2 = MultiRexTagger(
@@ -307,6 +309,21 @@ spatsmoo = RexTagger(
         r'gaussian{dlm}blur'.format(dlm=delimiter),
         r'smooth.{,25}?([^a-z]mm[^a-z]|millimet)',
     ]
+)
+
+spatsmoo_context = MultiRexTagger(
+    'spatsmoo',
+    [
+        r'spatial(ly?){dlm}filter'.format(dlm=delimiter),
+        r'gaussian(ly?){dlm}filter'.format(dlm=delimiter),
+        r'smooth(ed|ing)',
+    ],
+    [
+        # Match mm or mm3
+        r'\Wmm3?\W',
+        r'millimet(er|re)',
+    ],
+    nchar=150,
 )
 
 motreg = RexTagger(

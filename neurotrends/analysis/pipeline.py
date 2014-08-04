@@ -1,7 +1,6 @@
 import collections
 
 from neurotrends import pattern
-from neurotrends.model import mongo
 
 variance_groups = {
     name: group.labels
@@ -25,11 +24,9 @@ variance_groups['collection'] = cat_labels(
 )
 
 variance_groups['analysis'] = cat_labels(
-    ['pkg', 'proc', 'mod', 'mcc', 'tech'],
+    ['pkg', 'proc', 'mod', 'mcc'],
     pattern.tag_groups
 )
-
-articles = mongo['article'].find({'tags': {'$ne': []}}, {'tags': 1, 'date': 1})
 
 def count_pipelines(articles):
     """Count number of pipelines and number of pipelines per year.
@@ -46,27 +43,31 @@ def count_pipelines(articles):
     count = collections.defaultdict(
         lambda: collections.defaultdict(int)
     )
-    count_year= collections.defaultdict(
+    count_year = collections.defaultdict(
         lambda: collections.defaultdict(
             lambda: collections.defaultdict(int)
         )
     )
+    total_year = collections.defaultdict(int)
 
     for article in articles:
 
         date = article.get('date')
         year = date.year if date else None
 
+        if year is None:
+            continue
+
         flat_groups = collections.defaultdict(tuple)
 
         for tag in article['tags']:
 
             # Flatten tag to list of tuples, excluding context
-            flat_tag = [
+            flat_tag = frozenset([
                 (key, value)
                 for key, value in tag.items()
-                if key != 'context'
-            ]
+                if key not in ['context', 'group', 'span']
+            ])
 
             # Add flattened tag to matching groups
             for group, labels in variance_groups.items():
@@ -80,5 +81,7 @@ def count_pipelines(articles):
                 count[group][flat_tags] += 1
                 count_year[group][year][flat_tags] += 1
 
+        total_year[year] += 1
+
     # Return counts
-    return count, count_year
+    return count, count_year, total_year

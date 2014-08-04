@@ -7,8 +7,8 @@ from __future__ import division
 import re
 
 import matplotlib.pyplot as plt
-import seaborn as sns
 from scipy.stats import norm, pearsonr
+import seaborn as sns
 
 from neurotrends.config import mongo
 from neurotrends.model.utils import verified_mongo
@@ -130,66 +130,82 @@ class Validator(object):
 
 validators = {
 
-    # Software packages
-    'spm':     Validator({'label': 'spm'}, 'misc-softpck', 'spm'),
-    'fsl':     Validator({'label': 'fsl'}, 'misc-softpck', 'fsl'),
-    'afni':    Validator({'label': 'afni'}, 'misc-softpck', 'afni'),
-    'voyager': Validator({'label': 'voyager'}, 'misc-softpck', 'voyager'),
-    'surfer':  Validator({'label': 'surfer'}, 'misc-softpck', 'freesurfer'),
+    # Analysis software
+    'pkg': {
 
-    # Software versions
-    'spm96': Validator({'label': 'spm', 'version': '96'}, 'misc-softcom', 'spm 96'),
-    'spm99': Validator({'label': 'spm', 'version': '99'}, 'misc-softcom', 'spm 99'),
-    'spm2':  Validator({'label': 'spm', 'version': '2'}, 'misc-softcom', 'spm 2'),
-    'spm5':  Validator({'label': 'spm', 'version': '5'}, 'misc-softcom', 'spm 5'),
-    'spm8':  Validator({'label': 'spm', 'version': '8'}, 'misc-softcom', 'spm 8'),
+        # Packages
+        'spm':     Validator({'label': 'spm'}, 'misc-softpck', 'spm'),
+        'fsl':     Validator({'label': 'fsl'}, 'misc-softpck', 'fsl'),
+        'afni':    Validator({'label': 'afni'}, 'misc-softpck', 'afni'),
+        'voyager': Validator({'label': 'voyager'}, 'misc-softpck', 'voyager'),
+        'surfer':  Validator({'label': 'surfer'}, 'misc-softpck', 'freesurfer'),
+
+        # Versions
+        'spm96': Validator({'label': 'spm', 'version': '96'}, 'misc-softcom', 'spm 96'),
+        'spm99': Validator({'label': 'spm', 'version': '99'}, 'misc-softcom', 'spm 99'),
+        'spm2':  Validator({'label': 'spm', 'version': '2'}, 'misc-softcom', 'spm 2'),
+        'spm5':  Validator({'label': 'spm', 'version': '5'}, 'misc-softcom', 'spm 5'),
+        'spm8':  Validator({'label': 'spm', 'version': '8'}, 'misc-softcom', 'spm 8'),
+    },
 
     # Design
-    'event': Validator({'label': 'event'}, 'des-edes-destype', 'event'),
-    'block': Validator({'label': 'block'}, 'des-edes-destype', 'block'),
-    'mixed': Validator({'label': 'mixed'}, 'des-edes-destype', 'mixed'),
-
-    # Basis functions
-    'hrf':    Validator({'label': 'hrf'}, 'mod-smod-basis', 'hrf'),
-    'tmpdrv': Validator({'label': 'tmpdrv'}, 'mod-smod-basis', 'td'),
-    'dspdrv': Validator({'label': 'dspdrv'}, 'mod-smod-basis', 'disp'),
-    'fir':    Validator({'label': 'fir'}, 'mod-smod-basis', 'fir'),
+    'des': {
+        'event':  Validator({'label': 'event'}, 'des-edes-destype', 'event'),
+        'block':  Validator({'label': 'block'}, 'des-edes-destype', 'block'),
+        'mixed':  Validator({'label': 'mixed'}, 'des-edes-destype', 'mixed'),
+        'hrf':    Validator({'label': 'hrf'}, 'mod-smod-basis', 'hrf'),
+        'tmpdrv': Validator({'label': 'tmpdrv'}, 'mod-smod-basis', 'td'),
+        'dspdrv': Validator({'label': 'dspdrv'}, 'mod-smod-basis', 'disp'),
+        'fir':    Validator({'label': 'fir'}, 'mod-smod-basis', 'fir'),
+    },
 
     # Processing
-    'evtopt':   Validator({'label': 'desopt'}, 'des-edes-eventopt-bool'),
-    'stc':      Validator({'label': 'stc'}, 'proc-slicetime-bool'),
-    'realign':  Validator({'label': 'realign'}, 'proc-mc-bool'),
-    'coreg':    Validator({'label': 'coreg'}, 'proc-coreg-bool'),
-    'strip':    Validator({'label': 'strip'}, 'proc-skullstrip-bool'),
-    'norm':     Validator({'label': 'norm'}, 'proc-norm-bool'),
-    'spatsmoo': Validator({'label': 'spatsmoo'}, 'proc-smooth-bool'),
-    'filter':   Validator({'label': 'filter'}, 'mod-smod-filter-bool'),
-    'acf':      Validator({'label': 'autocorr'}, 'mod-smod-acf-bool'),
-    'roi':      Validator({'label': 'roi'}, 'mod-roi-bool'),
-    'motreg':   Validator({'label': 'motreg'}, 'mod-smod-regress', 'movement params'),
+    'proc': {
+        'evtopt':   Validator({'label': 'desopt'}, 'des-edes-eventopt-bool'),
+        'stc':      Validator({'label': 'stc'}, 'proc-slicetime-bool'),
+        'realign':  Validator({'label': 'realign'}, 'proc-mc-bool'),
+        'coreg':    Validator({'label': 'coreg'}, 'proc-coreg-bool'),
+        'strip':    Validator({'label': 'strip'}, 'proc-skullstrip-bool'),
+        'norm':     Validator({'label': 'norm'}, 'proc-norm-bool'),
+        'spatsmoo': Validator({'label': 'spatsmoo'}, 'proc-smooth-bool'),
+        'filter':   Validator({'label': 'filter'}, 'mod-smod-filter-bool'),
+        'acf':      Validator({'label': 'autocorr'}, 'mod-smod-acf-bool'),
+        'roi':      Validator({'label': 'roi'}, 'mod-roi-bool'),
+        'motreg':   Validator({'label': 'motreg'}, 'mod-smod-regress', 'movement params'),
+    },
 
     # Multiple comparison correction
-    'fdr':      Validator({'label': 'fdr'}, 'mod-gmod-mccorrect-mccmethod', 'fdr'),
-    'fwe':      Validator({'label': 'fwe'}, 'mod-gmod-mccorrect-mccmethod', 'fwe'),
-    'bon':      Validator({'label': 'bon'}, 'mod-gmod-mccorrect-mccmethod', 'bon'),
-    'alphasim': Validator({'label': 'alphasim'}, 'mod-gmod-mccorrect-mccmethod', 'alphasim'),
+    'mcc': {
+        'fdr':      Validator({'label': 'fdr'}, 'mod-gmod-mccorrect-mccmethod', 'fdr'),
+        'fwe':      Validator({'label': 'fwe'}, 'mod-gmod-mccorrect-mccmethod', 'fwe'),
+        'bon':      Validator({'label': 'bon'}, 'mod-gmod-mccorrect-mccmethod', 'bon'),
+        'alphasim': Validator({'label': 'alphasim'}, 'mod-gmod-mccorrect-mccmethod', 'alphasim'),
+    },
 
     # Task presentation software
-    'eprime':       Validator({'label': 'eprime'}, 'des-edes-taskprog', 'eprime'),
-    'presentation': Validator({'label': 'presentation'}, 'des-edes-taskprog', 'presentation'),
-    'cogent':       Validator({'label': 'cogent'}, 'des-edes-taskprog', 'cogent'),
-    'psyscope':     Validator({'label': 'psyscope'}, 'des-edes-taskprog', 'psyscope'),
-    'psychtoolbox': Validator({'label': 'psychtoolbox'}, 'des-edes-taskprog', 'psychtoolbox'),
+    'task': {
+        'eprime':       Validator({'label': 'eprime'}, 'des-edes-taskprog', 'eprime'),
+        'presentation': Validator({'label': 'presentation'}, 'des-edes-taskprog', 'presentation'),
+        'cogent':       Validator({'label': 'cogent'}, 'des-edes-taskprog', 'cogent'),
+        'psyscope':     Validator({'label': 'psyscope'}, 'des-edes-taskprog', 'psyscope'),
+        'psychtoolbox': Validator({'label': 'psychtoolbox'}, 'des-edes-taskprog', 'psychtoolbox'),
+    },
 
 }
 
-def validate(no_supplement=False):
+def validate_group(validators, no_supplement=False):
 
-    results = {
+    return {
         name: validator.validate(no_supplement=no_supplement)
         for name, validator in validators.iteritems()
     }
-    return results
+
+def validate(no_supplement=False):
+
+    return {
+        group: validate_group(vals, no_supplement=no_supplement)
+        for group, vals in validators.iteritems()
+    }
 
 def rp_select(pmid):
     for row in report:
@@ -269,12 +285,27 @@ def format_continuous_validation(rp_values, nt_values):
         pval=pval,
     )
 
-def validate_hist(values, xlabel=None, outname=None):
+def validate_hist(values, bins=5, labels=None, title=None, xlabel=None, outname=None):
 
-    ax = plt.hist(values)
+    plt.figure()
+
+    plt.hist(values, bins=bins, stacked=True)
+    ax = plt.gca()
+
+    if title:
+        ax.set_title(title)
 
     if xlabel:
         ax.set_xlabel(xlabel)
 
+    if labels:
+        lgd = ax.legend(
+            labels,
+            loc='upper left', bbox_to_anchor=(1, 1),
+        )
+        lgd.get_frame().set_facecolor('none')
+
     if outname:
-        plt.savefig(outname)
+        plt.savefig(
+            outname + '.pdf', bbox_inches='tight'
+        )

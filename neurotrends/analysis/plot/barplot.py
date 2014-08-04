@@ -96,6 +96,7 @@ def plot_values_by_year(values, dates, labels=None, ylabel=None,
             handles[::-1], labels[::-1],
             loc='upper left', bbox_to_anchor=(1, 1)
         )
+        lgd.get_frame().set_facecolor('none')
 
     # Optionally save
     if outname:

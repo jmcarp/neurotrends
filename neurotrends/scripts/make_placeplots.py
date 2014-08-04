@@ -13,17 +13,7 @@ from neurotrends.analysis.plot.utils import get_colors
 from neurotrends import pattern
 
 PALETTE_NAME = 'Set1'
-
-places = [
-    art['place']
-    for art in mongo['article'].find(
-        {},
-        {'place': True}
-    )
-    if art['place']
-]
-
-place_counts = collections.Counter(places)
+MIN_PROP = 0.1
 
 
 def crosstab(collection, xkey, xvals, ykey, yvals):
@@ -45,60 +35,89 @@ def crosstab(collection, xkey, xvals, ykey, yvals):
 
     return data
 
-top_places = [
-    place[0]
-    for place in place_counts.most_common(10)
-]
+def plot_tags_by_place(frame, stacked, outname=None):
+    """
 
-min_prop = 0.1
+    """
+    # Get colors
+    colors = get_colors(frame.columns, PALETTE_NAME)
 
-data = crosstab(
-    mongo['article'],
-    'place',
-    top_places,
-    'tags.label',
-    pattern.tag_groups['pkg'].labels
-)
+    # Draw initial plot
+    frame.plot(
+        kind='barh', stacked=stacked,
+        color=colors,
+    )
+    ax = plt.gca()
 
-frame = pd.DataFrame(
-    data,
-    index=top_places,
-    columns=pattern.tag_groups['pkg'].labels,
-)
+    # Hack: Remove horizontal line at y=0 inserted by pandas
+    ax.lines.pop()
 
-min_count = min_prop * frame.sum().sum()
+    # Adjust axes
+    ax.invert_yaxis()
+    ax.set_xlabel('Proportion')
 
-sum0 = frame.sum()
-plot_frame = frame.ix[:, sum0 >= min_count]
-plot_frame['other'] = frame.ix[:, sum0 < min_count].sum(axis=1)
+    # Draw legend
+    handles, labels = ax.get_legend_handles_labels()
+    lgd = ax.legend(
+        handles, labels,
+        loc='upper left', bbox_to_anchor=(1, 1)
+    )
+    lgd.get_frame().set_facecolor('none')
 
-colors = get_colors(plot_frame.columns, PALETTE_NAME)
+    # Save figure
+    if outname:
+        plt.savefig(outname + '.pdf', bbox_inches='tight')
 
-plot_frame = plot_frame.div(
-    1.0 * plot_frame.sum(axis=1),
-    axis=0,
-)
+# TODO: Split into smaller functions
+def plot_places(min_prop=MIN_PROP):
 
-plot_frame.plot(
-    kind='barh', stacked=True,
-    color=colors,
-)
+    place_counts = collections.Counter([
+        art['place']
+        for art in mongo['article'].find(
+            {},
+            {'place': True}
+        )
+        if art['place']
+    ])
 
-ax = plt.gca()
+    top_places = [
+        place[0]
+        for place in place_counts.most_common(10)
+    ]
 
-# Hack: Remove horizontal line at y=0 inserted by pandas
-ax.lines.pop()
+    data = crosstab(
+        mongo['article'],
+        'place',
+        top_places,
+        'tags.label',
+        pattern.tag_groups['pkg'].labels
+    )
 
-ax.invert_yaxis()
-ax.set_xlabel('Proportion')
+    frame = pd.DataFrame(
+        data,
+        index=top_places,
+        columns=pattern.tag_groups['pkg'].labels,
+    )
 
-handles, labels = ax.get_legend_handles_labels()
-lgd = ax.legend(
-    handles, labels,
-    loc='upper left', bbox_to_anchor=(1, 1)
-)
+    min_count = min_prop * frame.sum().sum()
 
-plt.savefig(
-    file_name(['pkg', 'stacked'], path='place') + '.pdf',
-    bbox_inches='tight'
-)
+    sum0 = frame.sum()
+    plot_frame = frame.ix[:, sum0 >= min_count]
+    plot_frame['other'] = frame.ix[:, sum0 < min_count].sum(axis=1)
+
+    plot_frame = plot_frame.div(
+        1.0 * plot_frame.sum(axis=1),
+        axis=0,
+    )
+
+    # Make plots
+    plot_tags_by_place(
+        plot_frame, stacked=True,
+        outname=file_name(['pkg', 'stacked'], path='place')
+    )
+    plot_tags_by_place(
+        plot_frame, stacked=False,
+        outname=file_name(['pkg', 'adjacent'], path='place')
+    )
+
+plot_places()

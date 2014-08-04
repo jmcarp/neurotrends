@@ -60,6 +60,7 @@ def multi_rank_plot(ranks_combined, group_labels, rank_groups, outname=None):
         [ranks_combined[idx]['label'] for idx in sorted_indices],
         loc='upper left', bbox_to_anchor=(1, 1),
     )
+    lgd.get_frame().set_facecolor('none')
 
     # Optionally save
     if outname:
@@ -106,6 +107,7 @@ def rank_plot(ranks, outname=None):
         [rank['label'] for rank in sorted_ranks],
         loc='upper left', bbox_to_anchor=(1, 1),
     )
+    lgd.get_frame().set_facecolor('none')
 
     # Optionally save
     if outname:

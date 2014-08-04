@@ -15,9 +15,10 @@ from sciscrape.exceptions import ScrapeError
 from neurotrends import pattern, tagger
 from neurotrends.config import mongo, re
 
-from .config import VERIFY_THRESHOLD, SAVE_DIRS, EXTENSIONS, \
-    DOCUMENT_TYPES, OPENURL_URL, EMAIL_ADDR, SCRAPE_CLASS, SCRAPE_KWARGS, \
-    DOCUMENT_TYPES_TO_FIELDS
+from .config import (
+    VERIFY_THRESHOLD, SAVE_DIRS, EXTENSIONS, DOCUMENT_TYPES, OPENURL_URL,
+    EMAIL_ADDR, SCRAPE_CLASS, SCRAPE_KWARGS, DOCUMENT_TYPES_TO_FIELDS,
+)
 from .document import HTMLDocument, PDFDocument
 from .author import Author
 from .utils import make_oid, get_institution
@@ -104,7 +105,7 @@ class Article(StoredObject):
                 self.save()
 
     @classmethod
-    def update(cls, query, max_count):
+    def add_missing(cls, query, max_count):
         """Search PubMed for articles and scrape documents.
 
         :param str query: PubMed query
@@ -353,10 +354,11 @@ class Article(StoredObject):
 
         self.save()
 
-    def verify(self, threshold=VERIFY_THRESHOLD, save=True):
+    def verify(self, threshold=VERIFY_THRESHOLD, overwrite=False, save=True):
         """Verify referenced documents.
 
         :param float threshold: Verification threshold
+        :param bool overwrite: Overwrite existing verification info
         :param bool save: Save record after update
 
         """
@@ -364,7 +366,7 @@ class Article(StoredObject):
             name
             for name, field in DOCUMENT_TYPES_TO_FIELDS.iteritems()
             if getattr(self, field) is not None
-                and getattr(self, field).verify(threshold)
+                and getattr(self, field).verify(threshold, overwrite=overwrite)
         ]
         if save:
             self.save()
