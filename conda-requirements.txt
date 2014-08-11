@@ -1,0 +1,7 @@
+# Scientific
+numpy
+scipy
+pandas
+matplotlib
+patsy
+statsmodels

@@ -1,4 +1,3 @@
-
 beautifulsoup4
 Biopython
 nameparser
@@ -14,11 +13,8 @@ requests
 -e git+https://github.com/euske/pdfminer#egg=pdfminer
 
 # Scientific stack
-numpy
-scipy
-pandas
-matplotlib
-patsy
-statsmodels
 seaborn
+
+# Dev tools
+invoke
 
