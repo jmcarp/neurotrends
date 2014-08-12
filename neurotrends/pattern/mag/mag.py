@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from neurotrends.config import re
 from neurotrends.tagger import RexTagger, MultiRexTagger
 from ..misc import delimiter
@@ -39,7 +41,7 @@ bruker = RexTagger(
 
 varian = RexTagger(
     'varian',
-    [r'varian']
+    [r'varian\W']
 )
 shimazdu = RexTagger(
     'shimadzu',
@@ -50,3 +52,4 @@ marconi = RexTagger(
     'marconi',
     [r'marconi']
 )
+

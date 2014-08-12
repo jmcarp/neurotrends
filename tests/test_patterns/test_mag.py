@@ -2,7 +2,7 @@
 
 """
 
-from neurotrends.pattern.mag.mag import ge, ge_context
+from neurotrends.pattern.mag.mag import ge, ge_context, varian
 from neurotrends.pattern.mag.est_field_strength import field_strength
 
 from . import build_tests
@@ -35,3 +35,14 @@ build_tests(
         'GE Hoffman',
     ]
 )
+
+build_tests(
+    varian,
+    [
+        ('varian scanner', {}),
+    ],
+    [
+        'analysis of variance',
+    ]
+)
+
