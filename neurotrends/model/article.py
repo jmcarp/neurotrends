@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from nameparser import HumanName
 from pyquery import PyQuery
 import dateutil.parser
@@ -12,7 +14,7 @@ from modularodm.query.querydialect import DefaultQueryDialect as Q
 from sciscrape.utils import pubtools
 from sciscrape.exceptions import ScrapeError
 
-from neurotrends import pattern, tagger
+from neurotrends import pattern, tagger, util
 from neurotrends.config import mongo, re
 
 from .config import (
@@ -47,6 +49,7 @@ class Article(StoredObject):
     _id = fields.StringField(default=make_oid)
 
     record = fields.DictionaryField()
+    _lrecord = fields.DictionaryField()
     date = fields.DateTimeField(index=True)
     pmid = fields.StringField(index=True)
     doi = fields.StringField(index=True)
@@ -470,4 +473,21 @@ class Article(StoredObject):
         if save:
             self.save()
 
+
+lrecord_fields = ['TI', 'JT']
+
+@Article.subscribe('before_save')
+def update_lrecord(schema, instance):
+    lrecord = {
+        key: instance.record[key]
+        for key in lrecord_fields
+        if key in instance.record
+    }
+    instance._lrecord = util.apply_recursive(
+        util.string_lower,
+        lrecord,
+    )
+
+
 Article.set_storage(storage.MongoStorage(mongo, 'article'))
+

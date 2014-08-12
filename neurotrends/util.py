@@ -45,3 +45,25 @@ def retry(f, ntry, delay, *args, **kwargs):
             print 'Exception: %s; retrying in %ds...' % (str(e), delay)
             time.sleep(delay)
     return f(*args, **kwargs)
+
+
+def apply_recursive(func, data):
+    if isinstance(data, dict):
+        return {
+            key: func(value)
+            for key, value in data.iteritems()
+        }
+    if isinstance(data, list):
+        return [
+            func(value)
+            for value in data
+        ]
+    return func(data)
+
+
+def string_lower(value):
+    try:
+        return value.lower()
+    except AttributeError:
+        return value
+
