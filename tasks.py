@@ -56,3 +56,8 @@ def install(upgrade=False):
     install_conda()
     install_pip(upgrade=upgrade)
 
+
+@task
+def piprot():
+    run('piprot requirements.txt conda-requirements.txt')
+
