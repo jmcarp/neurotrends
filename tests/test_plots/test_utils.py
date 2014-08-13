@@ -37,12 +37,12 @@ class TestGetColors(unittest.TestCase):
     def test_no_reserved(self):
         assert_equal(
             utils.get_colors(['foo', 'bar', 'baz'], 'husl'),
-            sns.utils.color_palette('husl', n_colors=3)
+            sns.color_palette('husl', n_colors=3)
         )
 
     def test_reserved(self):
         colors = utils.get_colors(['foo', 'other', 'bar', 'baz'], 'husl')
-        sns_colors = sns.utils.color_palette('husl', n_colors=3)
+        sns_colors = sns.color_palette('husl', n_colors=3)
         sns_colors.insert(1, utils.reserved_labels['other'])
         assert_equal(
             colors,

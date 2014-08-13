@@ -46,7 +46,7 @@ def get_colors(labels, palette_name):
         for label in labels
         if label not in reserved_labels
     ]
-    palette = sns.utils.color_palette(palette_name, len(color_labels))
+    palette = sns.color_palette(palette_name, len(color_labels))
 
     colors = []
     for label in labels:
@@ -56,3 +56,4 @@ def get_colors(labels, palette_name):
             colors.append(palette.pop(0))
 
     return colors
+
