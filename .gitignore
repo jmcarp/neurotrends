@@ -3,6 +3,7 @@
 fig/
 log/
 data/
+dump/
 .DS_Store
 *.swp
 *.history
