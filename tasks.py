@@ -10,12 +10,24 @@ LOG_PATH = '/usr/local/var/log/mongodb/mongo.log'
 # TODO: Add port, database name to MongoDB tasks
 
 @task
-def mongod(db_path=DB_PATH, fork=False, log_path=LOG_PATH):
+def mongoserver(db_path=DB_PATH, fork=False, log_path=LOG_PATH):
     cmd = 'mongod --dbpath {0}'.format(db_path)
     if fork:
         cmd += ' --fork'
     if log_path:
         cmd += ' --logpath {0}'.format(log_path)
+    run(cmd)
+
+
+@task
+def mongoclient():
+    cmd = 'mongo neurotrends'
+    run(cmd, pty=True)
+
+
+@task
+def count_tags():
+    cmd = 'python -m scripts.count_tags'
     run(cmd)
 
 
