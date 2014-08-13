@@ -1,12 +1,13 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 
+import os
+import re
+import errno
+
+from bson import ObjectId
 from bs4 import UnicodeDammit
 from unicodedata import normalize
-from bson import ObjectId
-import os, errno
-import re
-
-from modularodm.query.querydialect import DefaultQueryDialect as Q
+from modularodm import Q
 
 ###########
 # Queries #
@@ -139,3 +140,4 @@ def get_institution(affiliation):
 
     if matches:
         return matches[-1][0].strip()
+

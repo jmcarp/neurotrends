@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+
 import re
 from pymongo import MongoClient
 
 DATES = range(2000, 2014)
 
-mongo = MongoClient()['neurotrends']
+client = MongoClient()
+mongo = client['neurotrends']
 
 query = '''
     (
@@ -22,3 +25,4 @@ query = '''
     NOT "review"[PT]
     NOT "meta-analysis"[PT]
 '''
+
