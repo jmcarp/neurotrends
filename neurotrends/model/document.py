@@ -15,9 +15,10 @@ from modularodm import StoredObject, fields, storage
 from neurotrends.pdf.pdfxtract import pdfminer_extract, pypdf_extract
 from neurotrends.pdf.pdfocr import pdf_ocr
 from neurotrends.config import mongo
+from neurotrends.util import mkdir_p
 
 from .config import EXTRACT_SAVE_DIRS, PDF_MIN_LENGTH
-from .utils import make_oid, mkdir_p, to_unicode
+from .utils import make_oid, to_unicode
 
 parser = HTMLParser.HTMLParser()
 

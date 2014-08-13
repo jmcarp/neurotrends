@@ -2,10 +2,12 @@
 Set up paths for NeuroTrends.
 """
 
+from __future__ import absolute_import
+
 import os
 
 import neurotrends
-from util import mkdir_p
+from .util import mkdir_p
 
 # Get home directory
 home_file = os.path.dirname(neurotrends.__file__)
