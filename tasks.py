@@ -50,6 +50,14 @@ def mongorestore(db_path=DB_PATH, path=None, drop=False):
 
 
 @task
+def test(path='tests'):
+    cmd = 'py.test'
+    if path:
+        cmd += ' ' + path
+    run(cmd, pty=True)
+
+
+@task
 def install_conda():
     cmd = 'conda install --file conda-requirements.txt'
     run(cmd)
