@@ -5,31 +5,22 @@ NeuroTrends is a collection of tools for identifying, downloading, and analyzing
 
 ## Getting Started
 
-* Install GhostScript
-* Install Tesseract
+# Install system dependencies
 
-Mac:
 ```bash
-$ brew install ghostscript
-$ brew install tesseract
+$ brew bundle
 ```
 
-* Install requirements
+# Install python dependencies
 
 ```bash
-pip install -r requirements.txt
+$ pip install invoke
+$ invoke install
 ```
 
 ## Running Tests
 
-To run all tests:
-
 ```bash
-$ nosetests
+$ invoke test
 ```
 
-To run a particular test class or method:
-
-```bash
-$ nosetests tests/test_module.py:TestClass.test_method
-```
