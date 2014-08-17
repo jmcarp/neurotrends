@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import random
 import logging
 import collections
 
@@ -14,11 +15,12 @@ from neurotrends.model.config import SCRAPE_CLASS, SCRAPE_KWARGS
 logger = logging.getLogger(__name__)
 
 
-def add_missing(query, max_count):
+def add_missing(query, max_count, randomize=False):
     """Search PubMed for articles and scrape documents.
 
     :param str query: PubMed query
     :param int max_count: Maximum number of articles to process
+    :param bool randomize: Randomize list of articles to fetch
     :return: Added article objects
 
     """
@@ -31,8 +33,11 @@ def add_missing(query, max_count):
     ]
 
     missing_pmids = set(pmids) - set(stored_pmids)
-    pmids_to_add = list(missing_pmids)[:max_count]
     logger.warn('Found {0} articles to add.'.format(len(missing_pmids)))
+
+    pmids_to_add = list(missing_pmids)[:max_count]
+    if randomize:
+        random.shuffle(pmids_to_add)
 
     records = pubtools.download_pmids(pmids_to_add)
 
