@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import os
+import logging
+
 from nameparser import HumanName
 from pyquery import PyQuery
 import dateutil.parser
-import collections
 import requests
-import logging
-import os
 
-from modularodm import StoredObject, fields, storage
-from modularodm.query.querydialect import DefaultQueryDialect as Q
-
+from modularodm import StoredObject, Q, fields, storage
 from sciscrape.utils import pubtools
 from sciscrape.exceptions import ScrapeError
 
@@ -25,9 +23,10 @@ from .document import HTMLDocument, PDFDocument
 from .author import Author
 from .utils import make_oid, get_institution
 
-logging.basicConfig(level=logging.DEBUG)
 
+logger = logging.getLogger(__name__)
 dateparser = dateutil.parser.parser()
+
 
 DOCUMENT_MAP = {
     'pmc': {
@@ -43,6 +42,7 @@ DOCUMENT_MAP = {
         'field': 'publisher_pdf',
     },
 }
+
 
 class Article(StoredObject):
 
@@ -66,8 +66,6 @@ class Article(StoredObject):
     verified = fields.StringField(list=True)
 
     tags = fields.DictionaryField('Tag', list=True)
-
-    ### Methods ###
 
     def _get_doi_openurl(self, save=True):
         """Look up DOI using CrossRef's OpenURL service. Pass enough
@@ -108,72 +106,12 @@ class Article(StoredObject):
                 self.save()
 
     @classmethod
-    def add_missing(cls, query, max_count):
-        """Search PubMed for articles and scrape documents.
-
-        :param str query: PubMed query
-        :param int max_count: Maximum number of articles to process
-        :return list: Added article objects
-
-        """
-        pmids = pubtools.search_pmids(query)
-        stored_pmids = [
-            article['pmid']
-            for article in mongo['article'].find(
-                {}, {'pmid': 1}
-            )
-        ]
-
-        pmids_to_add = set(pmids) - set(stored_pmids)
-        pmids_to_add = list(pmids_to_add)[:max_count]
-
-        records = pubtools.download_pmids(pmids_to_add)
-
-        scraper = SCRAPE_CLASS(**SCRAPE_KWARGS)
-
-        added = []
-
-        for pmid, record in zip(pmids_to_add, records):
-            logging.debug('Adding article {}'.format(pmid))
-            article = Article.from_record(record)
-            article.scrape(scraper)
-            added.append(article)
-
-        return added
-
-    @classmethod
-    def remove_duplicates(cls, by='pmid'):
-        """Remove duplicate articles by field.
-
-        :param str by: Article field to identify duplicates
-
-        """
-        counts = collections.defaultdict(int)
-        values = [
-            value[by]
-            for value in cls._storage[0].store.find({}, {by: 1})
-        ]
-        for value in values:
-            counts[value] += 1
-
-        for value, count in counts.items():
-            if count > 1:
-                articles = list(Article.find(Q(by, 'eq', value)))
-                for duplicate in articles[1:]:
-                    logging.debug(
-                        'Deleting duplicate record: {}'.format(
-                            value
-                        )
-                    )
-                    cls.remove_one(duplicate)
-
-    @classmethod
     def from_record(cls, record, doi=None):
-        """Create instance of Article from a PubMed record
+        """Create instance of Article from a PubMed record.
 
         :param dict record: PubMed record from pubtools
         :param str doi: Optional DOI
-        :return Article: New article
+        :return: New article
 
         """
         article = Article()
@@ -224,13 +162,11 @@ class Article(StoredObject):
 
     @classmethod
     def from_pmid(cls, pmid):
-
         records = pubtools.download_pmids([pmid])
         return cls.from_record(records[0])
 
     @classmethod
     def from_doi(cls, doi):
-
         pass
 
     def _get_filepath(self, document_type):
@@ -338,10 +274,10 @@ class Article(StoredObject):
             info = scraper.scrape(
                 pmid=self.pmid,
                 doi=self.doi,
-                fetch_types=document_types
+                fetch_types=document_types,
             )
         except ScrapeError:
-            logging.debug('Could not scrape article')
+            logger.info('Could not scrape article')
             return
 
         # Save scraped files
@@ -369,7 +305,7 @@ class Article(StoredObject):
             name
             for name, field in DOCUMENT_TYPES_TO_FIELDS.iteritems()
             if getattr(self, field) is not None
-                and getattr(self, field).verify(threshold, overwrite=overwrite)
+            and getattr(self, field).verify(threshold, overwrite=overwrite)
         ]
         if save:
             self.save()

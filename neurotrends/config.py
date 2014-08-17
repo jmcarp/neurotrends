@@ -3,10 +3,13 @@
 import re
 from pymongo import MongoClient
 
+
 DATES = range(2000, 2014)
+
 
 client = MongoClient()
 mongo = client['neurotrends']
+
 
 query = '''
     (

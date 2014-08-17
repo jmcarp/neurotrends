@@ -81,3 +81,10 @@ def install(upgrade=False):
 def piprot():
     run('piprot requirements.txt conda-requirements.txt')
 
+
+@task
+def scrape(max_count=100):
+    from neurotrends import config
+    from neurotrends.model import scripts
+    scripts.add_missing(config.query, max_count)
+
