@@ -155,6 +155,17 @@ def authors():
     return serialized.data
 
 
+# Set up CORS headers
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers.extend({
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST',
+    })
+    return response
+
+
 # Configure application
 
 if os.environ.get('NEUROTRENDS_ENV') == 'prod':
