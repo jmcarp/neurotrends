@@ -3,6 +3,7 @@
 import os
 import re
 import functools
+import collections
 
 from flask import request, url_for
 from flask.ext.api import FlaskAPI, status, exceptions
@@ -10,6 +11,7 @@ from webargs.flaskparser import FlaskParser
 from webargs import Arg
 from modularodm import Q
 
+from neurotrends.config import tag_counts
 from neurotrends import model
 
 from . import serializers
@@ -79,7 +81,7 @@ author_sort_translator = utils.SortTranslator(
 article_page_args = {
     'page_num': Arg(
         int,
-        validate=lambda value: value > 1,
+        validate=lambda value: value > 0,
         default=ARTICLE_PAGE_NUM_DEFAULT,
     ),
     'page_size': Arg(
@@ -95,7 +97,7 @@ article_sort_args = {
 author_page_args = {
     'page_num': Arg(
         int,
-        validate=lambda value: value > 1,
+        validate=lambda value: value > 0,
         default=AUTHOR_PAGE_NUM_DEFAULT,
     ),
     'page_size': Arg(
@@ -106,6 +108,13 @@ author_page_args = {
 }
 author_sort_args = {
     'sort': Arg(str, default=AUTHOR_SORT_DEFAULT),
+}
+
+tag_args = {
+    'label': Arg(
+        str,
+        use=lambda value: value.strip()
+    ),
 }
 
 
@@ -153,6 +162,24 @@ def authors():
     page = paginator.get_page(page_args['page_num'])
     serialized = serializers.AuthorQuerySerializer(page, many=True)
     return serialized.data
+
+
+@app.route('/tags/', methods=['GET'])
+def tags():
+    query = {}
+    args = parser.parse(tag_args, request)
+    label = args.get('label')
+    if label:
+        pattern = re.compile(re.escape(args['label']), re.I)
+        query.update({'_id': {'$regex': pattern}})
+    tags = tag_counts.find(query)
+    return [
+        collections.OrderedDict([
+            ('label', tag['_id']),
+            ('count', int(tag['value'])),
+        ])
+        for tag in tags
+    ]
 
 
 # Set up CORS headers

@@ -6,7 +6,7 @@ import math
 import collections
 
 import furl
-from flask import request
+from flask import request, url_for
 from marshmallow import Serializer, fields
 
 from . import utils
@@ -118,8 +118,12 @@ class TagSerializer(Serializer):
 
 class AuthorSerializer(Serializer):
     class Meta:
-        fields = ('_id', 'last', 'first', 'middle', 'suffix', '_full')
+        fields = ('_id', 'url', 'full', 'last', 'first', 'middle', 'suffix', 'wrote')
+    full = fields.String(attribute='_full')
     wrote = fields.Nested('ArticleSerializer', many=True)
+    url = fields.Function(
+        lambda obj: url_for('author', author_id=obj._id, _external=True)
+    )
 
 
 class ArticleSerializer(Serializer):

@@ -9,6 +9,7 @@ DATES = range(2000, 2014)
 
 client = MongoClient()
 mongo = client['neurotrends']
+tag_counts = mongo['tag_counts']
 
 
 query = '''

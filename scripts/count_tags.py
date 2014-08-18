@@ -2,10 +2,7 @@
 
 from bson import Code
 
-from neurotrends.config import mongo
-
-
-TAG_COUNT_COLLECTION = 'tag_counts'
+from neurotrends.config import mongo, tag_counts
 
 
 mapper = Code('''function() {
@@ -28,6 +25,6 @@ if __name__ == '__main__':
     mongo['article'].map_reduce(
         mapper,
         reducer,
-        out={'replace': TAG_COUNT_COLLECTION},
+        out={'replace': tag_counts},
     )
 
