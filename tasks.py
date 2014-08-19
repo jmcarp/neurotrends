@@ -32,6 +32,12 @@ def count_tags():
 
 
 @task
+def get_stats():
+    cmd = 'python -m scripts.get_stats'
+    run(cmd)
+
+
+@task
 def mongodump(out_path=None):
     cmd = 'mongodump --db neurotrends'
     if out_path:
