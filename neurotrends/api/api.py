@@ -11,7 +11,7 @@ from webargs.flaskparser import FlaskParser
 from webargs import Arg
 from modularodm import Q
 
-from neurotrends.config import tag_counts
+from neurotrends.config import stats_collection, tag_counts_collection
 from neurotrends import model
 
 from . import serializers
@@ -31,7 +31,7 @@ ARTICLE_SORT_DEFAULT      = 'title'
 AUTHOR_PAGE_NUM_DEFAULT   = 1
 AUTHOR_PAGE_SIZE_DEFAULT  = 20
 AUTHOR_PAGE_SIZE_OPTIONS  = [10, 20, 50]
-AUTHOR_SORT_DEFAULT       = 'last'
+AUTHOR_SORT_DEFAULT       = 'lastname'
 
 
 # Query translators
@@ -63,7 +63,7 @@ article_query_translator = utils.QueryTranslator(
 
 author_query_translator = utils.QueryTranslator(
     model.Author,
-    name=utils.QueryFieldTranslator('_full', 'icontains'),
+    fullname=utils.QueryFieldTranslator('_full', 'icontains'),
 )
 
 article_sort_translator = utils.SortTranslator(
@@ -162,6 +162,13 @@ def authors():
     page = paginator.get_page(page_args['page_num'])
     serialized = serializers.AuthorQuerySerializer(page, many=True)
     return serialized.data
+
+
+@app.route('/stats/', methods=['GET'])
+def stats():
+    data = stats_collection.find_one({'_id': 'stats'})
+    del data['_id']
+    return data
 
 
 @app.route('/tags/', methods=['GET'])
