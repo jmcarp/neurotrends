@@ -120,7 +120,7 @@ class AuthorSerializer(Serializer):
     class Meta:
         fields = ('_id', 'url', 'full', 'last', 'first', 'middle', 'suffix', 'wrote')
     full = fields.String(attribute='_full')
-    wrote = fields.Nested('ArticleSerializer', many=True)
+    wrote = fields.Nested('ArticleSerializer', many=True, exclude=['record', 'tags'])
     url = fields.Function(
         lambda obj: url_for('author', author_id=obj._id, _external=True)
     )
@@ -128,9 +128,12 @@ class AuthorSerializer(Serializer):
 
 class ArticleSerializer(Serializer):
     class Meta:
-        fields = ('_id', 'record', 'date', 'pmid', 'doi', 'authors', 'tags')
+        fields = ('_id', 'url', 'record', 'date', 'pmid', 'doi', 'authors', 'tags')
     authors = fields.Nested(AuthorSerializer, many=True, exclude=['wrote'])
     tags = fields.Nested('TagSerializer', many=True)
+    url = fields.Function(
+        lambda obj: url_for('article', article_id=obj._id, _external=True)
+    )
 
 
 # Paginated serializers
