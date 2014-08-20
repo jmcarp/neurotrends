@@ -94,3 +94,8 @@ def scrape(max_count=100, randomize=True):
     from neurotrends.model import scripts
     scripts.add_missing(config.query, max_count, randomize)
 
+
+@task
+def serve_api():
+    run('python api.py')
+
