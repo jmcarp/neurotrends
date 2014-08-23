@@ -44,6 +44,32 @@ DOCUMENT_MAP = {
 }
 
 
+# Some PubMed records encode dates in unhelpful formats like "2006 May-Aug"
+# or "1999 Jan 1-15". This pattern extracts the useful part of these strings
+# ("2006 May", "1999 Jan") and discards the rest.
+month_range_pattern = re.compile(
+    r'''
+        (
+            \d{4}
+            \s
+            [a-z]{3}
+        )
+        [\s\-]
+        .*
+    ''',
+    re.I | re.X,
+)
+
+
+# TODO: Test me
+def parse_publication_date(date_text):
+    date_text = re.sub(month_range_pattern, '\\1', date_text)
+    try:
+        return dateparser.parse(date_text)
+    except (TypeError, ValueError, AttributeError):
+        return None
+
+
 class Article(StoredObject):
 
     _id = fields.StringField(default=make_oid)
@@ -105,13 +131,16 @@ class Article(StoredObject):
             if save:
                 self.save()
 
+    def update_date(self):
+        self.date = parse_publication_date(self.record['DP'])
+
     @classmethod
     def from_record(cls, record, doi=None):
         """Create instance of Article from a PubMed record.
 
         :param dict record: PubMed record from pubtools
         :param str doi: Optional DOI
-        :return: New article
+        :return: Created article
 
         """
         article = Article()
@@ -141,11 +170,7 @@ class Article(StoredObject):
             article.authors.append(author)
 
         # Add date
-        try:
-            # DP -> Date of Publication
-            article.date = dateparser.parse(record['DP'])
-        except:
-            pass
+        self.update_date()
 
         # Add PMID
         article.pmid = record['PMID']
@@ -158,6 +183,7 @@ class Article(StoredObject):
                 pass
 
         article.save()
+
         return article
 
     @classmethod
