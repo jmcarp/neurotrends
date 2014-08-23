@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/jmcarp/neurotrends.png?branch=master
+    :target: https://travis-ci.org/jmcarp/neurotrends
+
 neurotrends
 ============
 

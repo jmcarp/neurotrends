@@ -1,14 +1,21 @@
 language: python
 
 services:
-    - mongodb
+  - mongodb
 
 python:
-    - "2.7"
+  - "2.7"
 
 install:
-    - travis_retry pip install invoke
-    - travis_retry invoke install
+  # Set up Conda; see http://sburns.org/2014/03/28/faster-travis-builds.html
+  - travis_retry pip install conda
+  - conda init
+  - conda update conda --yes
+  - conda create -p $HOME/conda --yes pip "python=$TRAVIS_PYTHON_VERSION"
+  - export PATH=$HOME/conda/bin:$PATH
+  # Install Neurotrends requirements
+  - travis_retry pip install invoke
+  - travis_retry invoke install
 
 script: invoke test
 
