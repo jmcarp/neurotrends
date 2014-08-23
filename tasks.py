@@ -64,8 +64,10 @@ def test(path='tests'):
 
 
 @task
-def install_conda():
+def install_conda(yes=False):
     cmd = 'conda install --file conda-requirements.txt'
+    if yes:
+        cmd += ' --yes'
     run(cmd)
 
 

@@ -15,7 +15,8 @@ install:
   - export PATH=$HOME/conda/bin:$PATH
   # Install Neurotrends requirements
   - travis_retry pip install invoke
-  - travis_retry invoke install
+  - travis_retry invoke install_conda --yes
+  - travis_retry invoke install_pip
 
 script: invoke test
 
