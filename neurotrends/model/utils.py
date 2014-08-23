@@ -2,12 +2,16 @@
 
 import os
 import re
-import errno
+import logging
 
 from bson import ObjectId
 from bs4 import UnicodeDammit
 from unicodedata import normalize
 from modularodm import Q
+
+
+logger = logging.getLogger(__name__)
+
 
 ###########
 # Queries #
@@ -49,11 +53,16 @@ def clean_institution(txt):
     return (original, txt)
 
 def load_institutions(fname):
-    institutions = open(fname).readlines()
-    rv = []
-    for institution in institutions:
-        rv.append(clean_institution(institution))
-    return rv
+    try:
+        institutions = open(fname).readlines()
+    except IOError as error:
+        logger.error('Could not load institutions.')
+        logger.exception(error)
+        return []
+    return [
+        clean_institution(institution)
+        for institution in institutions
+    ]
 
 here, _ = os.path.split(os.path.abspath(__file__))
 institutions = load_institutions(os.path.join(here, 'data', 'institutions.csv'))
