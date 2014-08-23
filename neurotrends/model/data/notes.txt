@@ -1,0 +1,13 @@
+Institutions retrieved from http://www.topuniversities.com/university-rankings/world-university-rankings/2013
+
+Steps:
+
+* Import jQuery
+* Run
+    $('td.uni').map(function() {
+        return $.trim($(this).text())
+    }).get().join('\n')
+
+Manual adjustents:
+
+* Changed "UCL (University College London)" to "University College London (UCL")

@@ -2,8 +2,8 @@
 
 fig/
 log/
-data/
 dump/
+/data/
 .DS_Store
 *.swp
 *.history
