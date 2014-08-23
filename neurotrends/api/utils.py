@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import weakref
+import collections
 
 from flask.ext.api import exceptions
 from flask import request
 from modularodm import Q
+
+from neurotrends import config
 
 
 class lazyproperty(object):
@@ -147,5 +152,70 @@ def prepare_label(label):
             .strip()
             .replace('.', '')
             .replace('$', '')
+    )
+
+
+def filter_dict(data, predicate):
+    return {
+        key: value
+        for key, value in data.iteritems()
+        if predicate(key, value)
+    }
+
+
+def sort_dict(data, key, **kwargs):
+    return collections.OrderedDict([
+        pair
+        for pair in sorted(
+            data.items(),
+            key=key,
+            **kwargs
+        )
+    ])
+
+
+def get_tag_counts(label, normalize, years=None):
+    """Fetch tag counts by year, optionally normalized by total article counts
+    per year.
+
+    :param str label: Tag label
+    :param bool normalize: Normalize by total article counts
+    :param list years: Years to include; use all years if `None`
+
+    """
+    tag_collection = config.tag_year_counts_collection
+    tag_counts = {
+        record['_id']['year']: record['value']
+        for record in tag_collection.find(
+            {'_id.label': label}
+        )
+    }
+
+    if normalize:
+        year_collection = config.year_counts_collection
+        year_counts = {
+            record['_id']: record['value']
+            for record in year_collection.find(
+                {'_id': {'$in': tag_counts.keys()}}
+            )
+        }
+        tag_counts = {
+            year: tag_counts[year] / year_counts[year]
+            for year in tag_counts
+            if year in year_counts
+        }
+
+    if years:
+        year_predicate = lambda key, value: key in years
+    else:
+        year_predicate = lambda key, value: key is not None
+    tag_counts = filter_dict(
+        tag_counts,
+        year_predicate,
+    )
+
+    return sort_dict(
+        tag_counts,
+        lambda pair: pair[0]
     )
 

@@ -96,6 +96,18 @@ def scrape(max_count=100, randomize=True):
 
 
 @task
+def retag(processes=4):
+    from scripts import retag
+    retag.batch_retag(processes=processes)
+
+
+@task
+def update_dates(overwrite=False):
+    from scripts import update
+    update.update_dates(overwrite=overwrite)
+
+
+@task
 def serve_api():
     run('python api.py')
 

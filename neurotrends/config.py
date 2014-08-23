@@ -10,6 +10,8 @@ DATES = range(2000, 2014)
 client = MongoClient()
 mongo = client['neurotrends']
 tag_counts_collection = mongo['tag_counts']
+year_counts_collection = mongo['year_counts']
+tag_year_counts_collection = mongo['tag_year_counts']
 stats_collection = mongo['stats']
 
 

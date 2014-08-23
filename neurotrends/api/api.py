@@ -34,6 +34,12 @@ AUTHOR_PAGE_SIZE_OPTIONS  = [10, 20, 50]
 AUTHOR_SORT_DEFAULT       = 'lastname'
 
 
+text_bool_map = {
+    'true': True,
+    'false': False,
+}
+
+
 # Query translators
 
 # TODO: Consider searching on `record.AU` instead
@@ -76,7 +82,7 @@ author_sort_translator = utils.SortTranslator(
 )
 
 
-# Query filters
+# Webargs
 
 article_page_args = {
     'page_num': Arg(
@@ -114,6 +120,13 @@ tag_args = {
     'label': Arg(
         str,
         use=lambda value: value.strip()
+    ),
+}
+tag_count_args = {
+    'normalize': Arg(
+        str,
+        validate=lambda x: x.lower() in text_bool_map,
+        use=lambda x: text_bool_map[x.lower()]
     ),
 }
 
@@ -173,6 +186,9 @@ def stats():
 
 @app.route('/tags/', methods=['GET'])
 def tags():
+    """List tags.
+
+    """
     query = {}
     args = parser.parse(tag_args, request)
     label = args.get('label')
@@ -187,6 +203,18 @@ def tags():
         ])
         for tag in tags
     ]
+
+
+@app.route('/tag/<tag_id>/counts/', methods=['GET'])
+def tag_counts(tag_id):
+    """Get tag counts by year.
+
+    """
+    args = parser.parse(tag_count_args, request)
+    counts = utils.get_tag_counts(tag_id, normalize=args['normalize'])
+    return {
+        'counts': counts,
+    }
 
 
 # Set up CORS headers

@@ -114,3 +114,33 @@ def test_query_translator(query_translator, patch_find):
     # Hack: until `Query::__eq__` is implemented, use `__repr__` for comparison
     assert repr(translated) == repr(expected)
 
+
+# Test dictionary helpers
+
+def test_filter_dict():
+    data = {key: key ** 2 for key in range(5)}
+    predicate = lambda key, value: key % 2 == 0
+    expected = {0: 0, 2: 4, 4: 16}
+    assert expected == utils.filter_dict(data, predicate)
+
+
+def test_sort_dict_keys():
+    data = {key: -key ** 2 for key in range(5)}
+    key = lambda pair: pair[0]
+    result = utils.sort_dict(data, key)
+    assert result.keys() == range(5)
+
+
+def test_sort_dict_keys_reversed():
+    data = {key: -key ** 2 for key in range(5)}
+    key = lambda pair: pair[0]
+    result = utils.sort_dict(data, key, reverse=True)
+    assert result.keys() == range(5)[::-1]
+
+
+def test_sort_dict_values():
+    data = {key: -key ** 2 for key in range(5)}
+    key = lambda pair: pair[1]
+    result = utils.sort_dict(data, key)
+    assert result.keys() == range(5)[::-1]
+
