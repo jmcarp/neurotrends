@@ -18,6 +18,7 @@ seaborn
 # API tools
 Flask==0.10.1
 Flask-API==0.6.2
+Werkzeug==0.9.6
 marshmallow==0.7.0
 webargs==0.5.0
 

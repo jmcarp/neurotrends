@@ -14,6 +14,6 @@ def test_app():
 
 @pytest.yield_fixture(scope='module')
 def scratch_models():
-    with TestDatabase('neurotrends-test'):
+    with TestDatabase('neurotrends_test'):
         yield
 

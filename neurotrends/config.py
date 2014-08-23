@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
 
 import re
+
 from pymongo import MongoClient
+from werkzeug.local import LocalProxy
 
 
 DATES = range(2000, 2014)
+DATABASE_NAME = 'neurotrends'
 
 
 client = MongoClient()
-mongo = client['neurotrends']
+
+
+# Use a `LocalProxy` for database access for simpler testing
+
+def _get_database():
+    return client[DATABASE_NAME]
+
+mongo = LocalProxy(_get_database)
+
+
 tag_counts_collection = mongo['tag_counts']
 year_counts_collection = mongo['year_counts']
 tag_year_counts_collection = mongo['tag_year_counts']
