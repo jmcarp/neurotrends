@@ -10,9 +10,9 @@ install:
   # Set up Conda; see http://sburns.org/2014/03/28/faster-travis-builds.html
   - travis_retry pip install conda
   - conda init
-  - conda update conda --yes
-  - conda create -p $HOME/conda --yes pip "python=$TRAVIS_PYTHON_VERSION"
-  - export PATH=$HOME/conda/bin:$PATH
+  - conda update --yes conda
+  - conda create --yes -n neurotrends python=2.7 pip
+  - source activate neurotrends
   # Install Neurotrends requirements
   - travis_retry pip install invoke
   - travis_retry invoke install_conda --yes
