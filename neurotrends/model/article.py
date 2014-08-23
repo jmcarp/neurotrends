@@ -170,7 +170,7 @@ class Article(StoredObject):
             article.authors.append(author)
 
         # Add date
-        self.update_date()
+        article.update_date()
 
         # Add PMID
         article.pmid = record['PMID']
