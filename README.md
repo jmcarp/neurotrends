@@ -1,5 +1,4 @@
-.. image:: https://travis-ci.org/jmcarp/neurotrends.png?branch=master
-    :target: https://travis-ci.org/jmcarp/neurotrends
+[![Build Status](https://travis-ci.org/jmcarp/neurotrends.svg?branch=master)](https://travis-ci.org/jmcarp/neurotrends)
 
 neurotrends
 ============
