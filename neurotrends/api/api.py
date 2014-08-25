@@ -195,7 +195,7 @@ def tags():
     if label:
         pattern = re.compile(re.escape(args['label']), re.I)
         query.update({'_id': {'$regex': pattern}})
-    tags = tag_counts.find(query)
+    tags = tag_counts_collection.find(query)
     return [
         collections.OrderedDict([
             ('label', tag['_id']),
