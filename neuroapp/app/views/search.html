@@ -1,0 +1,68 @@
+
+<form
+        role="form"
+        class="form-horizontal"
+        name="searchForm"
+        ng-submit="submit(searchForm)"
+    >
+
+    <div class="form-group">
+        <label for="searchTitle" class="col-sm-2 control-label">Title</label>
+        <div class="col-sm-6">
+            <input class="form-control" id="searchTitle" ng-model="params.title" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="searchDoi" class="col-sm-2 control-label">DOI</label>
+        <div class="col-sm-6">
+            <input class="form-control" id="searchDoi" ng-model="params.doi" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label for="searchPmid" class="col-sm-2 control-label">PMID</label>
+        <div class="col-sm-6">
+            <input class="form-control" id="searchPmid" ng-model="params.pmid" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="searchTags" class="col-sm-2 control-label">Tags</label>
+        <div class="col-sm-6">
+            <tags-input
+                    ng-model="tags"
+                    display-property="label"
+                    add-from-autocomplete-only="true"
+                >
+                <auto-complete 
+                            source="fetchTags($query)"
+                            min-length="2"
+                    ></auto-complete>
+            </tags-input>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <div class="col-sm-offset-2 col-sm-10">
+            <button type="submit" class="btn btn-default" ng-disabled="disableSubmit">Submit</button>
+        </div>
+    </div>
+
+</form>
+
+<div ng-repeat="result in results">
+    <search-result result="result"></search-result>
+</div>
+
+<pagination 
+        direction-links="false" 
+        total-items="paging.numResults" 
+        items-per-page="paging.pageSize"
+        boundary-links="true"
+        max-size="paging.maxSize"
+        rotate="false"
+        ng-model="paging.currentPage" 
+        ng-change="setPage()"
+        ng-show="results.length > 0"
+    ></pagination>
+

@@ -1,0 +1,30 @@
+<div>
+    <p class="result-title">{{ result.record.TI }}</p>
+    <a ng-click="toggleTags()">
+        <i 
+                class="fa"
+                ng-class="{
+                    'fa-caret-square-o-down': !showTags,
+                    'fa-caret-square-o-up': showTags
+                }"
+            ></i>
+        {{ showTags ? 'Hide' : 'Show' }} tags
+    </a>
+    <div ng-show="showTags">
+        <span
+                class="label search-result-tag"
+                ng-class="{
+                    'label-success': tagIndex === $index,
+                    'label-primary': tagIndex !== $index
+                }"
+                ng-repeat="tag in result.tags"
+                ng-click="highlightTag($index)"
+            >{{ makeLabel(tag) }}
+        </span>
+        <dl class="dl-horizontal">
+            <dt ng-repeat-start="(document, context) in tagContext">{{ document }}</dt>
+            <dd ng-repeat-end>{{ context }}</dd>
+        </dl>
+    </div>
+</div>
+

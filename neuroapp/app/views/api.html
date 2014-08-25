@@ -1,0 +1,60 @@
+<div>
+    <div>
+        <label>URL</label>
+        <span>{{ apiUrl }}article/{id}/</span>
+    </div>
+    <div>
+        <label>Methods</label>
+        <span>GET</span>
+    </div>
+</div>
+
+<div>
+    <div>
+        <label>URL</label>
+        <a ng-href="{{ apiUrl }}articles/">{{ apiUrl }}articles/</a>
+    </div>
+    <div>
+        <label>Methods</label>
+        <span>GET</span>
+    </div>
+    <div>
+        <label>Parameters</label>
+        <ul>
+            <li>title: Substring of article title</li>
+            <li>journal: Substring of journal title</li>
+            <li>pmid: PubMed Identifier</li>
+            <li>doi: Digital Object Identifier</li>
+        </ul>
+    </div>
+</div>
+
+<div>
+    <div>
+        <label>URL</label>
+        <span>{{ apiUrl }}author/{id}/</span>
+    </div>
+    <div>
+        <label>Methods</label>
+        <span>GET</span>
+    </div>
+</div>
+
+<div>
+    <div>
+        <label>URL</label>
+        <a ng-href="{{ apiUrl }}authors/">{{ apiUrl }}authors/</a>
+    </div>
+    <div>
+        <label>Methods</label>
+        <span>GET</span>
+    </div>
+    <div>
+        <label>Parameters</label>
+        <ul>
+
+            <li>name: Substring of full name</li>
+        </ul>
+    </div>
+</div>
+

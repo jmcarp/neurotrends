@@ -1,0 +1,31 @@
+<div class="jumbotron">
+
+    <h1>NeuroTrends</h1>
+
+    <p class="lead">
+        Uncovering methodological trends in Functional MRI research
+    </p>
+</div>
+
+<div class="row marketing">
+
+    <p class="lead text-center" ng-show="statsLoaded">
+        Now including {{ stats.numTags | number }} methodological details about {{ stats.numArticles | number }} articles, 
+        published between {{ stats.firstYear }} and {{ stats.lastYear }}
+    </p>
+
+    <h4><a ng-href="#/search">Search</a></h4>
+    <p>
+        Search for articles by title, authors, and methods.
+    </p>
+    <h4><a ng-href="#/api">API</a></h4>
+    <p>
+        All data for NeuroTrends are programmatically accessible through a simple application programming interface. Re-analyze the data or integrate with your own application.
+    </p>
+    <h4>Visualizations</h4>
+    <p>
+        Coming soon: Interactive visualizations of methodological parameters over time, author, and more.
+    </p>
+
+</div>
+
