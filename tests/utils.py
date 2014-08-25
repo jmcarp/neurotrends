@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pymongo
+from factory.base import Factory
 
 from neurotrends import config
 
@@ -28,4 +29,18 @@ class TestDatabase(object):
         config.client.drop_database(self.database_name)
         config.DATABASE_NAME = self.original_database_name
         self.original_database_name = None
+
+
+class DictFactory(Factory):
+
+    ABSTRACT_FACTORY = True
+    FACTORY_FOR = dict
+
+    @classmethod
+    def _build(cls, target_class, **kwargs):
+        return target_class(**kwargs)
+
+    @classmethod
+    def _create(cls, target_class, **kwargs):
+        return cls._build(target_class, **kwargs)
 
