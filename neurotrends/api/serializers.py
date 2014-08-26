@@ -118,14 +118,28 @@ class TagSerializer(Serializer):
     version = fields.Function(lambda obj: obj.get('version'))
 
 
+def serialize_author_url(obj):
+    return url_for('author', author_id=obj._id, _external=True)
+
+
 class AuthorSerializer(Serializer):
     class Meta:
         fields = ('_id', 'url', 'full', 'last', 'first', 'middle', 'suffix', 'wrote')
     full = fields.String(attribute='_full')
-    wrote = fields.Nested('ArticleSerializer', many=True, exclude=['record', 'tags'])
-    url = fields.Function(
-        lambda obj: url_for('author', author_id=obj._id, _external=True)
+    wrote = fields.Nested(
+        'ArticleSerializer',
+        exclude=['record', 'tags'],
+        many=True,
     )
+    url = fields.Function(serialize_author_url)
+
+
+def serialize_article_date(obj):
+    return obj.date.isoformat() if obj.date else None
+
+
+def serialize_article_url(obj):
+    return url_for('article', article_id=obj._id, _external=True)
 
 
 class ArticleSerializer(Serializer):
@@ -133,9 +147,8 @@ class ArticleSerializer(Serializer):
         fields = ('_id', 'url', 'record', 'date', 'pmid', 'doi', 'authors', 'tags')
     authors = fields.Nested(AuthorSerializer, many=True, exclude=['wrote'])
     tags = fields.Nested('TagSerializer', many=True)
-    url = fields.Function(
-        lambda obj: url_for('article', article_id=obj._id, _external=True)
-    )
+    date = fields.Function(serialize_article_date)
+    url = fields.Function(serialize_article_url)
 
 
 # Paginated serializers
