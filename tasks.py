@@ -91,6 +91,12 @@ def piprot():
 
 
 @task
+def ensure_indices():
+    from neurotrends.model import indices
+    indices.ensure_indices()
+
+
+@task
 def scrape(max_count=100, randomize=True):
     from neurotrends import config
     from neurotrends.model import scripts
