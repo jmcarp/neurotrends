@@ -18,6 +18,8 @@ angular.module('neuroApp')
         $scope.tagIndex = null;
         $scope.tagContext = {};
 
+        $scope.date = moment($scope.result.date);
+
         $scope.toggleTags = function() {
           $scope.showTags = ! $scope.showTags;
         };
@@ -41,6 +43,13 @@ angular.module('neuroApp')
             $scope.tagIndex = index;
             $scope.tagContext = $scope.result.tags[index].context;
           }
+        };
+
+        $scope.pubMedUrl = function(pmid) {
+          return 'http://www.ncbi.nlm.nih.gov/pubmed/' + pmid;
+        };
+        $scope.crossRefUrl = function(doi) {
+          return 'http://dx.doi.org/' + doi;
         };
 
       }

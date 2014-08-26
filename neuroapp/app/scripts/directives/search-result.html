@@ -1,7 +1,29 @@
-<div>
-    <p class="result-title">{{ result.record.TI }}</p>
-    <a ng-click="toggleTags()">
-        <i 
+<p>
+    <div class="result-title">{{ result.record.TI }}</div>
+    <div class="result-author">
+        <span ng-repeat="author in result.authors">
+            {{ author.full }}{{ $last ? '.' : ',' }}
+        </span>
+    </div>
+    <div class="result-journal">
+        {{ result.record.JT }}, {{ date.year() }}.
+    </div>
+    <div>
+        <a
+                target="_blank"
+                ng-show="result.pmid"
+                ng-href="{{ pubMedUrl(result.pmid) }}"
+            >PubMed <i class="fa fa-external-link"></i>
+        </a>
+        <a
+                target="_blank"
+                ng-show="result.doi"
+                ng-href="{{ crossRefUrl(result.doi) }}"
+            >CrossRef <i class="fa fa-external-link"></i>
+        </a>
+    </div>
+    <span ng-click="toggleTags()" style="cursor: pointer;">
+        <i
                 class="fa"
                 ng-class="{
                     'fa-caret-square-o-down': !showTags,
@@ -9,7 +31,7 @@
                 }"
             ></i>
         {{ showTags ? 'Hide' : 'Show' }} tags
-    </a>
+    </span>
     <div ng-show="showTags">
         <span
                 class="label search-result-tag"
@@ -26,5 +48,5 @@
             <dd ng-repeat-end>{{ context }}</dd>
         </dl>
     </div>
-</div>
+</p>
 

@@ -82,19 +82,7 @@ body {
 
 .search-result-tag {
   margin-right: 3px;
+  display: inline-block;
+  cursor: pointer;
 }
 
-.show-hide {
-  position: relative;
-  height: 100px;
-  -webkit-transition: top linear 1.5s;
-  transition: top linear 1.5s;
-  top: 0;
-}
-.show-hide.ng-hide {
-  top: -100px;
-}
-.show-hide.ng-hide-add,
-.show-hide.ng-hide-remove {
-  display: block!important;
-}
