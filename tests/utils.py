@@ -44,3 +44,20 @@ class DictFactory(Factory):
     def _create(cls, target_class, **kwargs):
         return cls._build(target_class, **kwargs)
 
+
+
+# Borrowed from osf.io
+class ModularOdmFactory(Factory):
+
+    ABSTRACT_FACTORY = True
+
+    @classmethod
+    def _build(cls, target_class, *args, **kwargs):
+        return target_class(*args, **kwargs)
+
+    @classmethod
+    def _create(cls, target_class, *args, **kwargs):
+        instance = cls._build(target_class, *args, **kwargs)
+        instance.save()
+        return instance
+

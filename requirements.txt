@@ -30,4 +30,5 @@ nose==1.3.3
 piprot==0.7.0
 pytest==2.6.1
 webtest-plus==0.3.1
+Faker==0.0.4
 
