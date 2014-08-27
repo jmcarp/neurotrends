@@ -50,12 +50,12 @@ def retry(f, ntry, delay, *args, **kwargs):
 def apply_recursive(func, data):
     if isinstance(data, dict):
         return {
-            key: func(value)
+            key: apply_recursive(func, value)
             for key, value in data.iteritems()
         }
     if isinstance(data, list):
         return [
-            func(value)
+            apply_recursive(func, value)
             for value in data
         ]
     return func(data)
