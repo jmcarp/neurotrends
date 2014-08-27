@@ -436,7 +436,7 @@ class Article(StoredObject):
             self.save()
 
 
-lrecord_fields = ['TI', 'JT']
+lrecord_fields = ['TI', 'JT', 'FAU']
 
 @Article.subscribe('before_save')
 def update_lrecord(schema, instance):

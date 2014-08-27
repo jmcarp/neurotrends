@@ -9,6 +9,7 @@ INDICES = {
     'article': [
         [('_lrecord.TI', pymongo.ASCENDING)],
         [('_lrecord.JT', pymongo.ASCENDING)],
+        [('_lrecord.FAU', pymongo.ASCENDING)],
         [('tags.label', pymongo.ASCENDING)],
     ],
 }
