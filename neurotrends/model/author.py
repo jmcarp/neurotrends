@@ -20,6 +20,7 @@ class Author(StoredObject):
     middle = fields.StringField()
     suffix = fields.StringField()
     _full = fields.StringField()
+    _lfull = fields.StringField(index=True)
 
     def update_name_parts(self, fullname):
         human_name = nameparser.HumanName(fullname)
@@ -33,6 +34,7 @@ class Author(StoredObject):
             value = getattr(self, attr) or ''
             setattr(human_name, attr, value)
         self._full = unicode(human_name)
+        self._lfull = self._full.lower()
 
 
 @Author.subscribe('before_save')
