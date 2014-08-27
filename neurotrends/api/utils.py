@@ -88,14 +88,15 @@ class QueryTranslator(object):
 
         """
         reducer = lambda x, y: x & y
+        filterer = lambda x: x is not None
         translated = (
             translator(kwargs[field])
             for field, translator in self.translators.iteritems()
-            if field in kwargs
+            if kwargs.get(field) is not None
         )
         # Handle `TypeError` when `translators` is empty
         try:
-            query = reduce(reducer, translated)
+            query = reduce(reducer, filter(filterer, translated))
         except TypeError:
             query = None
         return self.model.find(query)
