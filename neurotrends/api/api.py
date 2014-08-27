@@ -14,9 +14,7 @@ from modularodm import Q
 from neurotrends.config import stats_collection, tag_counts_collection
 from neurotrends import model
 
-from . import serializers
-from . import settings
-from . import utils
+from . import serializers, settings, utils
 
 
 app = FlaskAPI(__name__)
@@ -40,49 +38,62 @@ text_bool_map = {
 }
 
 
-# Query translators
+# Query args
 
-# TODO: Consider searching on `record.AU` instead
-def query_article_authors(value):
-    author_query = model.Author.find(Q('last', 'icontains', value))
-    author_ids = author_query._to_primary_keys()
-    return Q('authors', 'all', author_ids)
+strip = lambda x: x.strip()
+strip_lower = lambda x: x.strip().lower()
 
 
-def query_article_tags(value):
+def query_article_authors(values):
+    if not values:
+        return None
     rules = [
-        {'$elemMatch': {'label': label.strip()}}
-        for label in value.split(',')
+        {'$elemMatch': {'$regex': value}}
+        for value in values
+    ]
+    return Q('_lrecord.FAU', 'all', rules)
+
+
+def query_article_tags(values):
+    if not values:
+        return None
+    rules = [
+        {'$elemMatch': {'label': value}}
+        for value in values
     ]
     return Q('tags', 'all', rules)
 
+
+article_query_args = {
+    'doi': Arg(str, use=strip),
+    'pmid': Arg(str, use=strip),
+    'title': Arg(str, use=strip_lower),
+    'journal': Arg(str, use=strip_lower),
+    'authors': Arg(str, multiple=True, use=strip_lower),
+    'tags': Arg(str, multiple=True, use=strip_lower),
+}
 
 article_query_translator = utils.QueryTranslator(
     model.Article,
     doi=utils.QueryFieldTranslator('doi'),
     pmid=utils.QueryFieldTranslator('pmid'),
-    title=utils.QueryFieldTranslator('record.TI', 'icontains'),
-    journal=utils.QueryFieldTranslator('record.JT', 'icontains'),
+    title=utils.QueryFieldTranslator('_lrecord.TI', 'contains'),
+    journal=utils.QueryFieldTranslator('_lrecord.JT', 'contains'),
     authors=query_article_authors,
     tags=query_article_tags,
 )
 
+
+author_query_args = {
+    'fullname': Arg(str, use=strip_lower),
+}
+
 author_query_translator = utils.QueryTranslator(
     model.Author,
-    fullname=utils.QueryFieldTranslator('_full', 'icontains'),
+    fullname=utils.QueryFieldTranslator('_lfull', 'contains'),
 )
 
-article_sort_translator = utils.SortTranslator(
-    title=utils.SortFieldTranslator('_lrecord.TI'),
-    journal=utils.SortFieldTranslator('_lrecord.JT'),
-)
-
-author_sort_translator = utils.SortTranslator(
-    lastname=utils.SortFieldTranslator('last'),
-)
-
-
-# Webargs
+# Sorting and paging args
 
 article_page_args = {
     'page_num': Arg(
@@ -96,9 +107,16 @@ article_page_args = {
         default=ARTICLE_PAGE_SIZE_DEFAULT,
     ),
 }
+
 article_sort_args = {
     'sort': Arg(str, default=ARTICLE_SORT_DEFAULT),
 }
+
+article_sort_translator = utils.SortTranslator(
+    title=utils.SortFieldTranslator('_lrecord.TI'),
+    journal=utils.SortFieldTranslator('_lrecord.JT'),
+)
+
 
 author_page_args = {
     'page_num': Arg(
@@ -112,9 +130,15 @@ author_page_args = {
         default=AUTHOR_PAGE_SIZE_DEFAULT,
     ),
 }
+
 author_sort_args = {
     'sort': Arg(str, default=AUTHOR_SORT_DEFAULT),
 }
+
+
+author_sort_translator = utils.SortTranslator(
+    lastname=utils.SortFieldTranslator('last'),
+)
 
 tag_args = {
     'label': Arg(
@@ -122,6 +146,7 @@ tag_args = {
         use=lambda value: value.strip()
     ),
 }
+
 tag_count_args = {
     'normalize': Arg(
         str,
@@ -144,7 +169,8 @@ def article(article_id):
 
 @app.route('/articles/', methods=['GET'])
 def articles():
-    query = article_query_translator.translate(request.args)
+    query_args = parser.parse(article_query_args, request)
+    query = article_query_translator.translate(query_args)
     sort_args = parser.parse(article_sort_args, request)
     sort_keys = article_sort_translator.translate(sort_args.get('sort'))
     query = query.sort(*sort_keys)
@@ -166,7 +192,8 @@ def author(author_id):
 
 @app.route('/authors/', methods=['GET'])
 def authors():
-    query = author_query_translator.translate(request.args)
+    query_args = parser.parse(author_query_args, request)
+    query = author_query_translator.translate(query_args)
     sort_args = parser.parse(author_sort_args, request)
     sort_keys = author_sort_translator.translate(sort_args.get('sort'))
     query = query.sort(*sort_keys)
