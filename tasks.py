@@ -68,7 +68,7 @@ def install_conda(yes=False):
     cmd = 'conda install --file conda-requirements.txt'
     if yes:
         cmd += ' --yes'
-    run(cmd)
+    run(cmd, pty=True)
 
 
 @task
