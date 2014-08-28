@@ -76,14 +76,16 @@ def get_matlab_versions(overwrite=False):
         return versions
 
     # Open Wikipedia page
-    req = requests.get('http://en.wikipedia.org/wiki/MATLAB')
-    soup = BeautifulSoup(req.text)
+    response = requests.get('http://en.wikipedia.org/wiki/MATLAB')
+    soup = BeautifulSoup(response.content)
 
     # Find "Release History" table
-    history_text = soup.find(text=re.compile(r'release history', re.I))
-    history_span = history_text.findParent('span')
-    history_table = history_span.findNext('table', {'class': 'wikitable'})
-    history_row = history_table.findAll('tr')
+    history_headline = soup.find(id='Release_history')
+    history_table = history_headline.find_next(
+        'table',
+        class_=re.compile(r'wikitable'),
+    )
+    history_row = history_table.find_all('tr')
     
     # Initialize Matlab versions
     versions = {}
