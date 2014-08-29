@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from neurotrends.api.api import app
-app.run()
+
+
+if __name__ == '__main__':
+    app.run()
 
