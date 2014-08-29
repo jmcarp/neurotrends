@@ -47,18 +47,24 @@ angular.module('neuroApp')
     var serialize = function() {
       var ret = {};
       angular.forEach($scope.params, function(key, value) {
-	if (value) {
-	  ret[key] = value;
-	}
+        if (value) {
+          ret[key] = value;
+        }
       });
+      if ($scope.authors.length) {
+        ret.authors = $scope.authors.map(function(item) {
+          return item.label;
+        });
+      }
       if ($scope.tags.length) {
         ret.tags = $scope.tags.map(function(item) {
-	  return item.label;
-	});
+          return item.label;
+        });
       }
       ret.page_num = $scope.paging.currentPage;  // jshint ignore:line
       ret.page_size = $scope.paging.pageSize;    // jshint ignore:line
       return ret;
+      console.log($scope.authors);
     };
 
     $scope.fetchTags = function(query) {
