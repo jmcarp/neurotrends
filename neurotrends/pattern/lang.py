@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 category = 'tool'
 
 import os
@@ -63,7 +65,7 @@ def get_matlab_versions(overwrite=False):
 
     :param overwrite: Overwrite existing data?
     :return: MATLAB versions
-        
+
     """
     # Get version file
     version_file = os.path.join(trendpath.data_dir, 'matlab-versions.shelf')
@@ -86,12 +88,12 @@ def get_matlab_versions(overwrite=False):
         class_=re.compile(r'wikitable'),
     )
     history_row = history_table.find_all('tr')
-    
+
     # Initialize Matlab versions
     versions = {}
 
     for row in history_row[1:]:
-        
+
         # Get <td> elements
         tds = row.findAll('td')
 
@@ -117,7 +119,7 @@ def get_matlab_versions(overwrite=False):
         versions[version_number] = [version_number]
         if version_name:
             versions[version_number].append(version_name)
-    
+
     # Save results to version file
     shelf = shelve.open(version_file)
     shelf['versions'] = versions
@@ -127,16 +129,20 @@ def get_matlab_versions(overwrite=False):
     return versions
 
 
-matlab_versions = get_matlab_versions()
+# Hack: Catch IOError in Shelve; breaks on serving API with uWSGI
+try:
+    matlab_versions = get_matlab_versions()
+    matlab = RexComboVersionTagger(
+        'matlab',
+        [
+            r'matlab',
+        ],
+        version_separator,
+        # Only match against complete versions; e.g., don't confuse "matlab r14"
+        # with "matlab r1"
+        looks=Looks(negahead=r'(\d|\.[1-9]|st|nd|rd|th)'),
+        versions=matlab_versions,
+    )
+except IOError:
+    pass
 
-matlab = RexComboVersionTagger(
-    'matlab',
-    [
-        r'matlab',
-    ],
-    version_separator,
-    # Only match against complete versions; e.g., don't confuse "matlab r14"
-    # with "matlab r1"
-    looks=Looks(negahead=r'(\d|\.[1-9]|st|nd|rd|th)'),
-    versions=matlab_versions,
-)
