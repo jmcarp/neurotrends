@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import collections
+
 import mock
 import pytest
 from tests.fixtures import scratch_models
@@ -8,6 +10,7 @@ from flask.ext.api import exceptions
 from modularodm import Q
 
 from neurotrends import model
+from neurotrends import config
 from neurotrends.api import utils
 from neurotrends.api import serializers
 
@@ -31,6 +34,33 @@ def test_get_record_by_id_not_found(scratch_models):
             model.Article,
             serializers.ArticleSerializer
         )
+
+
+@pytest.yield_fixture
+def scratch_tag_author_counts(scratch_models):
+    config.tag_author_counts_collection.insert({
+        '_id': '12345',
+        'value': {
+            'smooth': 2,
+            'normalize': 5,
+        },
+    })
+    yield
+    # Must clear fake count as `scratch_models` is module-scoped
+    config.tag_author_counts_collection.remove({'_id': '12345'})
+
+
+def test_get_tags_by_author(scratch_tag_author_counts):
+    serialized = utils.get_tag_author_counts('12345')
+    assert serialized == collections.OrderedDict([
+        ('normalize', 5),
+        ('smooth', 2),
+    ])
+
+
+def test_get_tags_by_author_not_found(scratch_tag_author_counts):
+    with pytest.raises(ValueError):
+        utils.get_tag_author_counts('54321')
 
 
 @pytest.fixture

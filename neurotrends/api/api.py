@@ -11,7 +11,10 @@ from webargs.flaskparser import FlaskParser
 from webargs import Arg
 from modularodm import Q
 
-from neurotrends.config import stats_collection, tag_counts_collection
+from neurotrends.config import (
+    stats_collection,
+    tag_counts_collection,
+)
 from neurotrends import model
 
 from . import serializers, settings, utils
@@ -135,10 +138,10 @@ author_sort_args = {
     'sort': Arg(str, default=AUTHOR_SORT_DEFAULT),
 }
 
-
 author_sort_translator = utils.SortTranslator(
     lastname=utils.SortFieldTranslator('last'),
 )
+
 
 tag_args = {
     'label': Arg(
@@ -188,6 +191,15 @@ def author(author_id):
         model.Author,
         serializers.AuthorSerializer,
     )
+
+
+@app.route('/author/<author_id>/tags/', methods=['GET'])
+def author_tags(author_id):
+    args = parser.parse(tag_count_args, request)
+    counts = utils.get_tag_author_counts(author_id)
+    if counts is None:
+        abort(httplib.NOT_FOUND)
+    return {'counts': counts}
 
 
 @app.route('/authors/', methods=['GET'])

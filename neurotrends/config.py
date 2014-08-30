@@ -21,11 +21,17 @@ def _get_database():
 mongo = LocalProxy(_get_database)
 
 
-tag_counts_collection = mongo['tag_counts']
-year_counts_collection = mongo['year_counts']
-tag_year_counts_collection = mongo['tag_year_counts']
-tag_author_counts_collection = mongo['tag_author_counts']
-stats_collection = mongo['stats']
+def make_collection_proxy(collection_name):
+    def _get_collection():
+        return mongo[collection_name]
+    return LocalProxy(_get_collection)
+
+
+tag_counts_collection = make_collection_proxy('tag_counts')
+year_counts_collection = make_collection_proxy('year_counts')
+tag_year_counts_collection = make_collection_proxy('tag_year_counts')
+tag_author_counts_collection = make_collection_proxy('tag_author_counts')
+stats_collection = make_collection_proxy('stats')
 
 
 query = '''
