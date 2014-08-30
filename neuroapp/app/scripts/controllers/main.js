@@ -8,17 +8,17 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('MainCtrl', function ($scope, $http, config) {
+  .controller('MainCtrl', function ($scope, $http, env) {
     $scope.stats = {};
     $scope.statsLoaded = false;
 
     var loadStats = function() {
       $http({
         method: 'get',
-	url: config.apiUrl + 'stats/',
+        url: env.apiUrl + 'stats/',
       }).then(function(response) {
         $scope.stats = response.data;
-	$scope.statsLoaded = true;
+        $scope.statsLoaded = true;
       });
     };
 

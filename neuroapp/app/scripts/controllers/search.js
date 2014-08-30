@@ -8,7 +8,7 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('SearchCtrl', function ($scope, $http, config) {
+  .controller('SearchCtrl', function ($scope, $http, env) {
 
     $scope.params = {};
     $scope.results = [];
@@ -37,8 +37,8 @@ angular.module('neuroApp')
     $scope.$watch('[params, tags, searchForm.$invalid, searchForm.$pristine]', function() {
       var form = $scope.searchForm;
       if (!form || form.$invalid || form.$pristine) {
-	$scope.disableSubmit = true;
-	return;
+        $scope.disableSubmit = true;
+        return;
       }
       var serialized = serialize();
       $scope.disableSubmit = Object.keys(serialized).length === 0;
@@ -70,7 +70,7 @@ angular.module('neuroApp')
     $scope.fetchTags = function(query) {
       return $http({
         method: 'get',
-        url: config.apiUrl + 'tags/',
+        url: env.apiUrl + 'tags/',
         params: {
           label: query
         }
@@ -80,12 +80,12 @@ angular.module('neuroApp')
     var fetchArticles = function() {
       $scope.results = [];
       $http({
-	    method: 'get',
-	    url: config.apiUrl + 'articles/',
-	    params: serialize()
+        method: 'get',
+        url: env.apiUrl + 'articles/',
+        params: serialize()
       }).then(
         handleSuccess,
-	    handleError
+        handleError
       );
     };
 

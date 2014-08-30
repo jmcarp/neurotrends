@@ -17,6 +17,7 @@ var app = angular
     'ngSanitize',
     'ngTagsInput',
     'ui.bootstrap',
+    'config'
   ])
   .config(function ($routeProvider) {
     $routeProvider
@@ -40,8 +41,4 @@ var app = angular
         redirectTo: '/'
       });
   });
-
-app.constant('config', {
-  'apiUrl': 'http://localhost:5000/'
-});
 

@@ -8,7 +8,7 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('ApiCtrl', function ($scope, config) {
-    $scope.apiUrl = config.apiUrl;
+  .controller('ApiCtrl', function ($scope, env) {
+    $scope.apiUrl = env.apiUrl;
   });
 
