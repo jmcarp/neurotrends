@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-from dateutil.relativedelta import relativedelta
-
-from modularodm import Q
 
 from invoke import task, run
 
@@ -116,6 +113,8 @@ def retag(processes=2):
 
 @task
 def rescrape(processes=2, months=6, limit=50, overwrite=False):
+    from dateutil.relativedelta import relativedelta
+    from modularodm import Q
     from scripts import retag
     cutoff_date = datetime.datetime.utcnow() - relativedelta(months=months)
     query = (
