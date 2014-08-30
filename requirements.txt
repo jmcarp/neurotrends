@@ -1,5 +1,5 @@
 beautifulsoup4==4.3.2
-Biopython==1.6.4
+Biopython==1.64
 nameparser==0.3.3
 PyPDF2==1.23
 pyquery==1.2.9
