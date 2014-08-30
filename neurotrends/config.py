@@ -24,6 +24,7 @@ mongo = LocalProxy(_get_database)
 tag_counts_collection = mongo['tag_counts']
 year_counts_collection = mongo['year_counts']
 tag_year_counts_collection = mongo['tag_year_counts']
+tag_author_counts_collection = mongo['tag_author_counts']
 stats_collection = mongo['stats']
 
 
