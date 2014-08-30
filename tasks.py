@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+import datetime
+from dateutil.relativedelta import relativedelta
+
+from modularodm import Q
+
 from invoke import task, run
 
 
@@ -104,9 +109,28 @@ def scrape(max_count=100, randomize=True):
 
 
 @task
-def retag(processes=4):
+def retag(processes=2):
     from scripts import retag
     retag.batch_retag(processes=processes)
+
+
+@task
+def rescrape(processes=2, months=6, limit=50, overwrite=False):
+    from scripts import retag
+    cutoff_date = datetime.datetime.utcnow() - relativedelta(months=months)
+    query = (
+        (
+            Q('date_last_scraped', 'lt', datetime.datetime.utcnow()) |
+            Q('date_last_scraped', 'eq', None)
+        ) &
+        Q('verified.0', 'exists', False)
+    )
+    retag.batch_rescrape(
+        processes=processes,
+        query=query,
+        limit=limit,
+        overwrite=overwrite,
+    )
 
 
 @task

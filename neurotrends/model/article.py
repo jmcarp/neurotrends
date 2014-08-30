@@ -2,6 +2,7 @@
 
 import os
 import logging
+import datetime
 
 from nameparser import HumanName
 from pyquery import PyQuery
@@ -92,6 +93,9 @@ class Article(StoredObject):
     verified = fields.StringField(list=True)
 
     tags = fields.DictionaryField('Tag', list=True)
+
+    date_last_scraped = fields.DateTimeField(index=True)
+    date_last_tagged = fields.DateTimeField(index=True)
 
     def _get_doi_openurl(self, save=True):
         """Look up DOI using CrossRef's OpenURL service. Pass enough
@@ -271,6 +275,10 @@ class Article(StoredObject):
         scraper = scraper or SCRAPE_CLASS(**SCRAPE_KWARGS)
         document_types = document_types or DOCUMENT_TYPES
 
+        # Update scraped date
+        self.date_last_scraped = datetime.datetime.utcnow()
+        self.save()
+
         # Skip files if document field and associated file already exist
         if not overwrite:
             for document_type in document_types:
@@ -414,6 +422,9 @@ class Article(StoredObject):
             dict(tag)
             for tag in existing_tags
         ]
+
+        # Update tagged date
+        self.date_last_tagged = datetime.datetime.utcnow()
 
         if save:
             self.save()
