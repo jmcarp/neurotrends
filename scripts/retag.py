@@ -11,11 +11,12 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-RetagCommand = namedtuple('RetagCommand', ['article_id'])
+RetagCommand = namedtuple('RetagCommand', ['article_id', 'overwrite'])
 RescrapeCommand = namedtuple('RescrapeCommand', ['article_id', 'overwrite'])
 
 
 def retag(command):
+    logger.info('Re-tagging article {0}'.format(command.article_id))
     try:
         article = Article.load(command.article_id)
         article.tag(overwrite=command.overwrite)
@@ -25,6 +26,7 @@ def retag(command):
 
 
 def rescrape(command):
+    logger.info('Re-scraping article {0}'.format(command.article_id))
     try:
         article = Article.load(command.article_id)
         article.scrape(overwrite=command.overwrite)
@@ -39,7 +41,7 @@ def batch_retag(processes, query=None, limit=None, overwrite=True):
     if limit:
         articles = articles.limit(limit)
     results = pool.map(
-        rescrape,
+        retag,
         (RetagCommand(article._id, overwrite) for article in articles),
     )
 
