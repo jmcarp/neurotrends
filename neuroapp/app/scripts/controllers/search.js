@@ -11,24 +11,33 @@ angular.module('neuroApp')
   .controller('SearchCtrl', function ($scope, $http, env) {
 
     $scope.params = {};
-    $scope.results = [];
     $scope.paging = {
+      currentPage: 1,
       pageSize: 10,
-      maxSize: 10
+      maxSize: 10,
     };
-    $scope.disableSubmit = true;
+    $scope.status = {
+      loading: false,
+      disableSubmit: true,
+      showPaging: false,
+    };
+    $scope.results = {
+      numResults: null,
+      articles: [],
+    };
 
-    var updateResults = function(results) {
-      if ($scope.searchForm) {
-      	$scope.searchForm.$setPristine();
-      }
-      $scope.results = results;
-    };
     var handleSuccess = function(response) {
-      updateResults(response.data.results);
-      $scope.paging.numResults = response.data.count;
+      $scope.searchForm.$setPristine();
+      $scope.results.articles = response.data.results;
+      $scope.results.numResults = response.data.count;
+      $scope.paging.pageStart = ($scope.paging.currentPage - 1) * $scope.paging.pageSize + 1;
+      $scope.paging.pageEnd = Math.min($scope.paging.currentPage * $scope.paging.pageSize, $scope.results.numResults);
+      $scope.status.loading = false;
+      $scope.status.showPaging = true;
     };
-    var handleError = function() {};
+    var handleError = function() {
+      $scope.status.loading = false;
+    };
 
     $scope.setPage = function() {
       fetchArticles();
@@ -37,11 +46,11 @@ angular.module('neuroApp')
     $scope.$watch('[params, tags, searchForm.$invalid, searchForm.$pristine]', function() {
       var form = $scope.searchForm;
       if (!form || form.$invalid || form.$pristine) {
-        $scope.disableSubmit = true;
+        $scope.status.disableSubmit = true;
         return;
       }
       var serialized = serialize();
-      $scope.disableSubmit = Object.keys(serialized).length === 0;
+      $scope.status.disableSubmit = Object.keys(serialized).length === 0;
     }, true);
 
     var serialize = function() {
@@ -64,7 +73,6 @@ angular.module('neuroApp')
       ret.page_num = $scope.paging.currentPage;  // jshint ignore:line
       ret.page_size = $scope.paging.pageSize;    // jshint ignore:line
       return ret;
-      console.log($scope.authors);
     };
 
     $scope.fetchTags = function(query) {
@@ -78,7 +86,8 @@ angular.module('neuroApp')
     };
 
     var fetchArticles = function() {
-      $scope.results = [];
+      $scope.status.loading = true;
+      $scope.results.articles = [];
       $http({
         method: 'get',
         url: env.apiUrl + 'articles/',
@@ -93,6 +102,8 @@ angular.module('neuroApp')
       if (form.$invalid) {
         return;
       }
+      $scope.paging.currentPage = 1;
+      $scope.status.showPaging = false;
       fetchArticles();
     };
 

@@ -1,8 +1,7 @@
-
 <form
         role="form"
-        class="form-horizontal"
         name="searchForm"
+        class="form-horizontal"
         ng-submit="submit(searchForm)"
     >
 
@@ -49,7 +48,7 @@
                     display-property="label"
                     add-from-autocomplete-only="true"
                 >
-                <auto-complete 
+                <auto-complete
                             source="fetchTags($query)"
                             min-length="2"
                     ></auto-complete>
@@ -59,25 +58,42 @@
 
     <div class="form-group">
         <div class="col-sm-offset-2 col-sm-10">
-            <button type="submit" class="btn btn-default" ng-disabled="disableSubmit">Submit</button>
+            <button 
+                    class="btn"
+                    type="submit" 
+                    ng-disabled="status.disableSubmit"
+                    ng-class="{
+                        'btn-primary': !status.disableSubmit,
+                        'btn-default': status.disableSubmit,
+                    }"
+                >Submit</button>
         </div>
     </div>
 
 </form>
 
-<div ng-repeat="result in results">
-    <search-result result="result"></search-result>
+<div ng-show="status.loading" class="h1">
+    <i class="fa fa-spinner fa-spin"></i>
+    <span>Loading...</span>
+</div>
+<div ng-show="results.articles.length">
+    <h3>
+        Showing results {{ paging.pageStart | number }} to {{ paging.pageEnd | number }} of {{ results.numResults | number }}
+    </h3>
+    <div ng-repeat="result in results.articles">
+        <search-result result="result"></search-result>
+    </div>
 </div>
 
 <pagination 
         direction-links="false" 
-        total-items="paging.numResults" 
+        total-items="results.numResults" 
         items-per-page="paging.pageSize"
         boundary-links="true"
         max-size="paging.maxSize"
         rotate="false"
         ng-model="paging.currentPage" 
         ng-change="setPage()"
-        ng-show="results.length > 0"
+        ng-show="status.showPaging"
     ></pagination>
 
