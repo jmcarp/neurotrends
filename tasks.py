@@ -40,20 +40,19 @@ def get_stats():
 
 
 @task
-def mongodump(out_path=None):
+def mongodump(path=None):
     cmd = 'mongodump --db neurotrends'
-    if out_path:
-        cmd += ' --out {0}'.format(out_path)
+    if path:
+        cmd += ' --out {0}'.format(path)
     run(cmd)
 
 
 @task
-def mongorestore(db_path=DB_PATH, path=None, drop=False):
+def mongorestore(path='dump/neurotrends', drop=False):
     cmd = 'mongorestore --db neurotrends'
     if drop:
         cmd += ' --drop'
-    if path:
-        cmd += path
+    cmd += ' ' + path
     run(cmd)
 
 
