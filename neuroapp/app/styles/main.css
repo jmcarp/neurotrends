@@ -86,3 +86,7 @@ body {
   cursor: pointer;
 }
 
+.context-highlight {
+  background: yellow;
+}
+

@@ -1,5 +1,16 @@
 'use strict';
 
+// From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
+function escapeRegex(string){
+  return string.replace(/([.*+?^${}()|\[\]\/\\])/g, '\\$1');
+}
+
+var highlightText = function(text, highlight, className) {
+  className = className || 'highlight';
+  var pattern = new RegExp('(' + escapeRegex(highlight) + ')');
+  return text.replace(pattern, '<span class="' + className + '">$1</span>');
+};
+
 /**
  * @ngdoc function
  * @name neuroApp.directive:SearchResult
@@ -12,7 +23,7 @@ angular.module('neuroApp')
         result: '='
       },
       templateUrl: 'scripts/directives/search-result.html',
-      controller: function($scope) {
+      controller: function($scope, $sce) {
 
         $scope.showTags = false;
         $scope.tagIndex = null;
@@ -35,13 +46,26 @@ angular.module('neuroApp')
           return label;
         };
 
+        var formatContext = function(tag) {
+          var ret = {};
+          var keys = Object.keys(tag.context);
+          var key;
+          for (var i=0; i<keys.length; i++) {
+            key = keys[i];
+            ret[key] = $sce.trustAsHtml(
+                highlightText(tag.context[key], tag.group[key], 'context-highlight')
+            );
+          }
+          return ret;
+        };
+
         $scope.highlightTag = function(index) {
           if ($scope.tagIndex === index) {
             $scope.tagIndex = null;
             $scope.tagContext = {};
           } else {
             $scope.tagIndex = index;
-            $scope.tagContext = $scope.result.tags[index].context;
+            $scope.tagContext = formatContext($scope.result.tags[index]);
           }
         };
 

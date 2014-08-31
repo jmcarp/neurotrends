@@ -45,7 +45,7 @@
         </span>
         <dl class="dl-horizontal">
             <dt ng-repeat-start="(document, context) in tagContext">{{ document }}</dt>
-            <dd ng-repeat-end>{{ context }}</dd>
+            <dd ng-repeat-end><span ng-bind-html="context"></span></dd>
         </dl>
     </div>
 </p>

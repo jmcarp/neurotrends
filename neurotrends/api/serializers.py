@@ -113,7 +113,7 @@ class PaginatedQuerySerializer(Serializer):
 
 class TagSerializer(Serializer):
     class Meta:
-        fields = ('label', 'category', 'context', 'value', 'version')
+        fields = ('label', 'category', 'group', 'context', 'value', 'version')
     value = fields.Function(lambda obj: obj.get('value'))
     version = fields.Function(lambda obj: obj.get('version'))
 
