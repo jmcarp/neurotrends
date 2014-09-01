@@ -8,6 +8,7 @@ import collections
 from flask.ext.api import exceptions
 from flask import request
 from modularodm import Q
+from webargs import Arg
 
 from neurotrends import config
 
@@ -29,6 +30,19 @@ class lazyproperty(object):
             value = self.method(instance)
             self.data[instance] = value
             return value
+
+
+text_bool_map = {
+    'true': True,
+    'false': False,
+}
+
+def make_bool_arg(**kwargs):
+    return Arg(
+        use=lambda x: text_bool_map.get(x.lower()),
+        validate=lambda x: x is not None,
+        **kwargs
+    )
 
 
 def get_record_by_id(record_id, record_model, record_serializer):

@@ -35,12 +35,6 @@ AUTHOR_PAGE_SIZE_OPTIONS  = [10, 20, 50]
 AUTHOR_SORT_DEFAULT       = 'lastname'
 
 
-text_bool_map = {
-    'true': True,
-    'false': False,
-}
-
-
 # Query args
 
 strip = lambda x: x.strip()
@@ -67,6 +61,12 @@ def query_article_tags(values):
     return Q('tags', 'all', rules)
 
 
+def query_article_fetched(value):
+    if value:
+        return Q('verified.0', 'exists', True)
+    return None
+
+
 article_query_args = {
     'doi': Arg(str, use=strip),
     'pmid': Arg(str, use=strip),
@@ -74,6 +74,7 @@ article_query_args = {
     'journal': Arg(str, use=strip_lower),
     'authors': Arg(str, multiple=True, use=strip_lower),
     'tags': Arg(str, multiple=True, use=strip_lower),
+    'fetched': utils.make_bool_arg(default=True),
 }
 
 article_query_translator = utils.QueryTranslator(
@@ -84,6 +85,7 @@ article_query_translator = utils.QueryTranslator(
     journal=utils.QueryFieldTranslator('_lrecord.JT', 'contains'),
     authors=query_article_authors,
     tags=query_article_tags,
+    fetched=query_article_fetched,
 )
 
 
@@ -151,11 +153,7 @@ tag_args = {
 }
 
 tag_count_args = {
-    'normalize': Arg(
-        str,
-        validate=lambda x: x.lower() in text_bool_map,
-        use=lambda x: text_bool_map[x.lower()]
-    ),
+    'normalize': utils.make_bool_arg(default=True),
 }
 
 

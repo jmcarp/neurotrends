@@ -6,13 +6,52 @@ import mock
 import pytest
 from tests.fixtures import scratch_models
 
+from flask import Flask
 from flask.ext.api import exceptions
+from webargs import Arg, ValidationError
+from webargs.flaskparser import FlaskParser
 from modularodm import Q
 
 from neurotrends import model
 from neurotrends import config
 from neurotrends.api import utils
 from neurotrends.api import serializers
+
+
+@pytest.fixture
+def app():
+    return Flask('test_app')
+
+
+@pytest.fixture
+def parser():
+    return FlaskParser()
+
+
+def test_bool_arg_true(app, parser):
+    arg = utils.make_bool_arg()
+    request = app.test_request_context('/?test_bool=true').request
+    assert parser.parse_arg('test_bool', arg, request) is True
+
+
+def test_bool_arg_false(app, parser):
+    arg = utils.make_bool_arg()
+    request = app.test_request_context('/?test_bool=false').request
+    assert parser.parse_arg('test_bool', arg, request) is False
+
+
+def test_bool_arg_invalid(app, parser):
+    arg = utils.make_bool_arg()
+    request = app.test_request_context('/?test_bool=nope').request
+    with pytest.raises(ValidationError):
+        parser.parse_arg('test_bool', arg, request)
+
+
+def test_bool_arg_default(app, parser):
+    arg = utils.make_bool_arg(default=True)
+    request = app.test_request_context('/').request
+    assert parser.parse_arg('test_bool', arg, request) is True
+
 
 
 def test_get_record_by_id(scratch_models):
