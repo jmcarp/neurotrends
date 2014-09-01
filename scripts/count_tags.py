@@ -14,7 +14,9 @@ tag_mapper = Code('''function() {
 
 year_mapper = Code('''function() {
     var year = this.date ? this.date.getFullYear() : null;
-    emit(year, 1);
+    if (this.verified.length) {
+        emit(year, 1);
+    }
 }''')
 
 
