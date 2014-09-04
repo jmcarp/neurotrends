@@ -1,0 +1,32 @@
+<h3 ng-show="!series.length">
+    Add tags to view trends over time
+</h3>
+
+<tags-input
+        id="searchTags"
+        ng-model="tags"
+        min-length="2"
+        display-property="label"
+        add-from-autocomplete-only="true"
+    >
+    <auto-complete
+                source="Tag.list($query)"
+                min-length="2"
+        ></auto-complete>
+</tags-input>
+
+<div ng-show="series.length">
+    <!-- See https://github.com/cmaurer/angularjs-nvd3-directives/issues/49 -->
+    <nvd3-line-chart
+            data="series"
+            height="500"
+            showXAxis="true"
+            showYAxis="true"
+            yAxisTickFormat="yAxisTickFormat"
+            showLegend="true"
+            interactive="true"
+            tooltips="true"
+            objectEquality="true"
+        ></nvd3-line-chart>
+</div>
+

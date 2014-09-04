@@ -8,7 +8,7 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('SearchCtrl', function ($scope, $http, env) {
+  .controller('SearchCtrl', function ($scope, $http, Tag, env) {
 
     $scope.params = {};
     $scope.paging = {
@@ -25,6 +25,8 @@ angular.module('neuroApp')
       numResults: null,
       articles: [],
     };
+
+    $scope.Tag = Tag;
 
     var handleSuccess = function(response) {
       $scope.searchForm.$setPristine();
@@ -73,16 +75,6 @@ angular.module('neuroApp')
       ret.page_num = $scope.paging.currentPage;  // jshint ignore:line
       ret.page_size = $scope.paging.pageSize;    // jshint ignore:line
       return ret;
-    };
-
-    $scope.fetchTags = function(query) {
-      return $http({
-        method: 'get',
-        url: env.apiUrl + 'tags/',
-        params: {
-          label: query
-        }
-      });
     };
 
     var fetchArticles = function() {

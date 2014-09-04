@@ -17,6 +17,7 @@ var app = angular
     'ngSanitize',
     'ngTagsInput',
     'ui.bootstrap',
+    'nvd3ChartDirectives',
     'config'
   ])
   .config(function ($routeProvider) {
@@ -32,6 +33,10 @@ var app = angular
       .when('/search', {
         templateUrl: 'views/search.html',
         controller: 'SearchCtrl'
+      })
+      .when('/tags', {
+        templateUrl: 'views/tags.html',
+        controller: 'TagsCtrl'
       })
       .when('/api', {
         templateUrl: 'views/api.html',

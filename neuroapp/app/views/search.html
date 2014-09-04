@@ -31,7 +31,6 @@
             <tags-input
                     id="searchAuthors"
                     ng-model="authors"
-                    class="bootstrap"
                     display-property="label"
                 >
             </tags-input>
@@ -44,12 +43,12 @@
             <tags-input
                     id="searchTags"
                     ng-model="tags"
-                    class="bootstrap"
+                    min-length="2"
                     display-property="label"
                     add-from-autocomplete-only="true"
                 >
                 <auto-complete
-                            source="fetchTags($query)"
+                            source="Tag.list($query)"
                             min-length="2"
                     ></auto-complete>
             </tags-input>

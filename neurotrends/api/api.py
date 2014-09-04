@@ -242,16 +242,18 @@ def tags():
     ]
 
 
-@app.route('/tag/<tag_id>/counts/', methods=['GET'])
+@app.route('/tags/<tag_id>/counts/', methods=['GET'])
 def tag_counts(tag_id):
     """Get tag counts by year.
 
     """
+    tag_id = tag_id.strip().lower()
     args = parser.parse(tag_count_args, request)
     counts = utils.get_tag_counts(tag_id, normalize=args['normalize'])
-    return {
-        'counts': counts,
-    }
+    return collections.OrderedDict([
+        ('label', tag_id),
+        ('counts', counts),
+    ])
 
 
 # Set up CORS headers

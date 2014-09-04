@@ -178,15 +178,18 @@ def filter_dict(data, predicate):
     }
 
 
-def sort_dict(data, key, **kwargs):
-    return collections.OrderedDict([
+def sort_dict(data, key, as_dict=True, **kwargs):
+    ordered = [
         pair
         for pair in sorted(
             data.items(),
             key=key,
             **kwargs
         )
-    ])
+    ]
+    if as_dict:
+        return collections.OrderedDict(ordered)
+    return ordered
 
 
 def get_tag_counts(label, normalize, years=None):
@@ -231,7 +234,8 @@ def get_tag_counts(label, normalize, years=None):
 
     return sort_dict(
         tag_counts,
-        lambda pair: pair[0]
+        lambda pair: pair[0],
+        as_dict=False,
     )
 
 

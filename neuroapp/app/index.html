@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
     <link rel="stylesheet" href="bower_components/ng-tags-input/ng-tags-input.min.css" />
     <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.css" />
+    <link rel="stylesheet" href="bower_components/nvd3/src/nv.d3.css" />
     <!-- endbower -->
     <!-- endbuild -->
     <!-- build:css(.tmp) styles/main.css -->
@@ -31,6 +32,7 @@
           <li ng-class="{active: isActive('/')}"><a ng-href="#">Home</a></li>
           <li ng-class="{active: isActive('/about')}"><a ng-href="#/about">About</a></li>
           <li ng-class="{active: isActive('/search')}"><a ng-href="#/search">Search</a></li>
+          <li ng-class="{active: isActive('/tags')}"><a ng-href="#/tags">Trends</a></li>
           <li ng-class="{active: isActive('/api')}"><a ng-href="#/api">API</a></li>
         </ul>
         <h3 class="text-muted">NeuroTrends</h3>
@@ -73,17 +75,22 @@
     <script src="bower_components/ng-tags-input/ng-tags-input.min.js"></script>
     <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
     <script src="bower_components/moment/moment.js"></script>
+    <script src="bower_components/d3/d3.js"></script>
+    <script src="bower_components/nvd3/nv.d3.js"></script>
+    <script src="bower_components/angularjs-nvd3-directives/dist/angularjs-nvd3-directives.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
 
         <!-- build:js({.tmp,app}) scripts/scripts.js -->
         <script src="scripts/app.js"></script>
         <script src="scripts/config.js"></script>
+        <script src="scripts/services/tag.js"></script>
         <script src="scripts/directives/searchresult.js"></script>
         <script src="scripts/controllers/nav.js"></script>
         <script src="scripts/controllers/main.js"></script>
         <script src="scripts/controllers/about.js"></script>
         <script src="scripts/controllers/search.js"></script>
+        <script src="scripts/controllers/tags.js"></script>
         <script src="scripts/controllers/api.js"></script>
         <!-- endbuild -->
 </body>
