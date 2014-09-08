@@ -45,14 +45,26 @@ angular.module('neuroApp')
       }
     };
 
+    var sortSeries = function() {
+      var label;
+      var series = [];
+      for (var i=0; i<$scope.tags.length; i++) {
+        label = $scope.tags[i].label;
+        if (cache[label]) {
+          series.push({
+            key: label,
+            values: cache[label]
+          });
+        }
+      }
+      $scope.series = series;
+    };
+
     var loadTagsSuccess = function(response) {
       var label = response.data.label;
       var series = response.data.counts;
       cache[label] = series;
-      $scope.series.push({
-        key: label,
-        values: series,
-      });
+      sortSeries();
     };
 
     var addSeries = function(key, values) {
