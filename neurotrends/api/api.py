@@ -159,7 +159,7 @@ tag_count_args = {
 
 # View functions
 
-@app.route('/article/<article_id>/', methods=['GET'])
+@app.route('/articles/<article_id>/', methods=['GET'])
 def article(article_id):
     return utils.get_record_by_id(
         article_id,
@@ -182,7 +182,7 @@ def articles():
     return serialized.data
 
 
-@app.route('/author/<author_id>/', methods=['GET'])
+@app.route('/authors/<author_id>/', methods=['GET'])
 def author(author_id):
     return utils.get_record_by_id(
         author_id,
@@ -191,7 +191,7 @@ def author(author_id):
     )
 
 
-@app.route('/author/<author_id>/tags/', methods=['GET'])
+@app.route('/authors/<author_id>/tags/', methods=['GET'])
 def author_tags(author_id):
     args = parser.parse(tag_count_args, request)
     counts = utils.get_tag_author_counts(author_id)
