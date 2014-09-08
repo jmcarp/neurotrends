@@ -12,16 +12,25 @@ var round = function(value, places) {
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('TagsCtrl', function ($scope, $http, Tag) {
+  .controller('TagsCtrl', function ($scope, $http, $location, $routeParams, Tag) {
+
+    // Private variables
 
     var cache = {};
+    var queued = [];
+
+    // Public variables
+
     $scope.series = [];
     $scope.tags = [];
+    $scope.permalink = null;
     $scope.yAxisTickFormat = function(value) {
       return round(value, 3);
     };
 
     $scope.Tag = Tag;
+
+    // Private functions
 
     var clearLabels = function() {
       $scope.series = [];
@@ -30,7 +39,8 @@ angular.module('neuroApp')
     var enqueueLabel = function(label) {
       if (cache[label]) {
         addSeries(label, cache[label]);
-      } else {
+      } else if (queued.indexOf(label) === -1) {
+        queued.push(label);
         Tag.counts(label).then(loadTagsSuccess);
       }
     };
@@ -52,12 +62,48 @@ angular.module('neuroApp')
       });
     };
 
-    $scope.$watch('tags', function(oldValue, newValue) {
+    var labelsFromUrl = function() {
+      var labels = $location.search().label;
+      if (!labels || labels === true) {
+        return [];
+      }
+      return angular.isArray(labels) ? labels : [labels];
+    };
+
+    var setParamsFromTags = function() {
+      $location.search('label', $scope.tags.map(function(tag) {
+        return tag.label;
+      }));
+    };
+
+    var getTagsFromParams = function() {
+      var labels = labelsFromUrl();
+      $scope.tags = labels.map(function(label) {
+        return {label: label};
+      });
+    };
+
+    var setPermalink = function() {
+      $scope.permalink = $location.absUrl();
+    };
+
+    // Listeners
+
+    $scope.$watch('tags', function() {
       clearLabels();
+      setParamsFromTags();
+      setPermalink();
       for (var i=0; i<$scope.tags.length; i++) {
         enqueueLabel($scope.tags[i].label);
       }
     }, true);
+
+    $scope.$on('$routeUpdate', function() {
+      getTagsFromParams();
+    });
+
+    // Check URL parameters on load
+    getTagsFromParams();
 
   });
 

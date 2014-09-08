@@ -36,11 +36,12 @@ var app = angular
       })
       .when('/tags', {
         templateUrl: 'views/tags.html',
-        controller: 'TagsCtrl'
+        controller: 'TagsCtrl',
+        reloadOnSearch: false
       })
       .when('/api', {
         templateUrl: 'views/api.html',
-	controller: 'ApiCtrl'
+        controller: 'ApiCtrl'
       })
       .otherwise({
         redirectTo: '/'
