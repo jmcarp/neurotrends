@@ -124,13 +124,8 @@ def serialize_author_url(obj):
 
 class AuthorSerializer(Serializer):
     class Meta:
-        fields = ('_id', 'url', 'full', 'last', 'first', 'middle', 'suffix', 'wrote')
+        fields = ('_id', 'url', 'full', 'last', 'first', 'middle', 'suffix')
     full = fields.String(attribute='_full')
-    wrote = fields.Nested(
-        'ArticleSerializer',
-        exclude=['record', 'tags'],
-        many=True,
-    )
     url = fields.Function(serialize_author_url)
 
 
@@ -145,7 +140,7 @@ def serialize_article_url(obj):
 class ArticleSerializer(Serializer):
     class Meta:
         fields = ('_id', 'url', 'record', 'date', 'pmid', 'doi', 'authors', 'tags')
-    authors = fields.Nested(AuthorSerializer, many=True, exclude=['wrote'])
+    authors = fields.Nested(AuthorSerializer, many=True)
     tags = fields.Nested('TagSerializer', many=True)
     date = fields.Function(serialize_article_date)
     url = fields.Function(serialize_article_url)

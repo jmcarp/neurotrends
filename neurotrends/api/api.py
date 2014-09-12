@@ -197,7 +197,10 @@ def author_tags(author_id):
     counts = utils.get_tag_author_counts(author_id)
     if counts is None:
         abort(httplib.NOT_FOUND)
-    return {'counts': counts}
+    return collections.OrderedDict([
+        ('author', author_id),
+        ('counts', counts),
+    ])
 
 
 @app.route('/authors/', methods=['GET'])

@@ -32,7 +32,15 @@
           <li ng-class="{active: isActive('/')}"><a ng-href="#">Home</a></li>
           <li ng-class="{active: isActive('/about')}"><a ng-href="#/about">About</a></li>
           <li ng-class="{active: isActive('/search')}"><a ng-href="#/search">Search</a></li>
-          <li ng-class="{active: isActive('/tags')}"><a ng-href="#/tags">Trends</a></li>
+          <li class="dropdown" ng-class="{active: isActive('/trends', true)}">
+            <a class="dropdown-toggle" href="#">
+              Trends <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a ng-href="#/trends/tags">Tags</a></li>
+              <li><a ng-href="#/trends/authors">Authors</a></li>
+            </ul>
+          </li>
           <li ng-class="{active: isActive('/api')}"><a ng-href="#/api">API</a></li>
         </ul>
         <h3 class="text-muted">NeuroTrends</h3>
@@ -41,7 +49,6 @@
       <div ng-view=""></div>
 
     </div>
-
 
     <!-- Google Analytics: change UA-XXXXX-X to be your site's ID -->
      <script>
@@ -74,23 +81,27 @@
     <script src="bower_components/angular-route/angular-route.js"></script>
     <script src="bower_components/ng-tags-input/ng-tags-input.min.js"></script>
     <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
-    <script src="bower_components/moment/moment.js"></script>
     <script src="bower_components/d3/d3.js"></script>
     <script src="bower_components/nvd3/nv.d3.js"></script>
     <script src="bower_components/angularjs-nvd3-directives/dist/angularjs-nvd3-directives.js"></script>
+    <script src="bower_components/moment/moment.js"></script>
+    <script src="bower_components/lodash/dist/lodash.compat.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
 
         <!-- build:js({.tmp,app}) scripts/scripts.js -->
         <script src="scripts/app.js"></script>
         <script src="scripts/config.js"></script>
+        <script src="scripts/services/author.js"></script>
         <script src="scripts/services/tag.js"></script>
+        <script src="scripts/services/utils.js"></script>
         <script src="scripts/directives/searchresult.js"></script>
         <script src="scripts/controllers/nav.js"></script>
         <script src="scripts/controllers/main.js"></script>
         <script src="scripts/controllers/about.js"></script>
         <script src="scripts/controllers/search.js"></script>
         <script src="scripts/controllers/tags.js"></script>
+        <script src="scripts/controllers/authortags.js"></script>
         <script src="scripts/controllers/api.js"></script>
         <!-- endbuild -->
 </body>

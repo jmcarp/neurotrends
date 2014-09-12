@@ -1,9 +1,5 @@
 'use strict';
 
-var round = function(value, places) {
-  return +value.toFixed(places);
-};
-
 /**
  * @ngdoc function
  * @name neuroApp.controller:TagsCtrl
@@ -12,7 +8,7 @@ var round = function(value, places) {
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('TagsCtrl', function ($scope, $http, $location, $routeParams, Tag) {
+  .controller('TagsCtrl', function ($scope, $location, Tag, Utils) {
 
     // Private variables
 
@@ -25,7 +21,7 @@ angular.module('neuroApp')
     $scope.tags = [];
     $scope.permalink = null;
     $scope.yAxisTickFormat = function(value) {
-      return round(value, 3);
+      return Utils.round(value, 3);
     };
 
     $scope.Tag = Tag;
@@ -43,7 +39,7 @@ angular.module('neuroApp')
         queued.push(label);
         Tag.counts(label).then(loadTagsSuccess);
       }
-    };
+    }
 
     var sortSeries = function() {
       var label;

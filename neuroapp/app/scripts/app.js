@@ -34,10 +34,14 @@ var app = angular
         templateUrl: 'views/search.html',
         controller: 'SearchCtrl'
       })
-      .when('/tags', {
+      .when('/trends/tags', {
         templateUrl: 'views/tags.html',
         controller: 'TagsCtrl',
         reloadOnSearch: false
+      })
+      .when('/trends/authors', {
+        templateUrl: 'views/author-tags.html',
+        controller: 'AuthorTagsCtrl'
       })
       .when('/api', {
         templateUrl: 'views/api.html',

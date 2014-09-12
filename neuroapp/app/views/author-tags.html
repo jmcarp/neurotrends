@@ -1,0 +1,34 @@
+<h3 ng-show="!authors.length">
+    Add authors to view tag counts
+</h3>
+
+<tags-input
+        id="searchAuthors"
+        ng-model="authors"
+        min-length="2"
+        display-property="full"
+        add-from-autocomplete-only="true"
+        replace-spaces-with-dashes="false"
+    >
+    <auto-complete
+                source="Author.query($query)"
+                min-length="2"
+        ></auto-complete>
+</tags-input>
+
+<div ng-show="authors.length" ng-style="chartStyle">
+    <nvd3-multi-bar-horizontal-chart
+            data="series"
+            showXAxis="true"
+            showYAxis="true"
+            margin="{left: 100}"
+            showControls="true"
+            yAxisTickFormat="yAxisTickFormat"
+            showLegend="true"
+            interactive="true"
+            tooltips="true"
+            rotateLabels="90"
+            objectEquality="true"
+        ></nvd3-multi-bar-horizontal-chart>
+</div>
+
