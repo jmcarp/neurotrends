@@ -8,7 +8,7 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('AuthorTagsCtrl', function ($scope, $location, Author, Utils) {
+  .controller('AuthorTagsCtrl', function ($scope, $location, Author, Utils, _) {
 
     // Constants
 

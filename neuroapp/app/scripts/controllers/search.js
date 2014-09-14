@@ -8,9 +8,14 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('SearchCtrl', function ($scope, $http, Tag, env) {
+  .controller('SearchCtrl', function ($scope, $http, Tag, env, _) {
+
+    var self = this;
 
     $scope.params = {};
+    $scope.authors = [];
+    $scope.tags = [];
+
     $scope.paging = {
       currentPage: 1,
       pageSize: 10,
@@ -28,7 +33,7 @@ angular.module('neuroApp')
 
     $scope.Tag = Tag;
 
-    var handleSuccess = function(response) {
+    self.handleSuccess = function(response) {
       $scope.searchForm.$setPristine();
       $scope.results.articles = response.data.results;
       $scope.results.numResults = response.data.count;
@@ -37,12 +42,12 @@ angular.module('neuroApp')
       $scope.status.loading = false;
       $scope.status.showPaging = true;
     };
-    var handleError = function() {
+    self.handleError = function() {
       $scope.status.loading = false;
     };
 
     $scope.setPage = function() {
-      fetchArticles();
+      self.fetchArticles();
     };
 
     $scope.$watch('[params, tags, searchForm.$invalid, searchForm.$pristine]', function() {
@@ -51,42 +56,38 @@ angular.module('neuroApp')
         $scope.status.disableSubmit = true;
         return;
       }
-      var serialized = serialize();
+      var serialized = self.serialize();
       $scope.status.disableSubmit = Object.keys(serialized).length === 0;
     }, true);
 
-    var serialize = function() {
+    self.serialize = function() {
       var ret = {};
-      angular.forEach($scope.params, function(key, value) {
+      angular.forEach($scope.params, function(value, key) {
         if (value) {
           ret[key] = value;
         }
       });
-      if ($scope.authors.length) {
-        ret.authors = $scope.authors.map(function(item) {
-          return item.label;
-        });
-      }
-      if ($scope.tags.length) {
-        ret.tags = $scope.tags.map(function(item) {
-          return item.label;
-        });
-      }
+      ret.authors = $scope.authors.length ?
+          _.pluck($scope.authors, 'label') :
+          undefined;
+      ret.tags = $scope.tags.length ?
+          _.pluck($scope.tags, 'label') :
+          undefined;
       ret.page_num = $scope.paging.currentPage;  // jshint ignore:line
       ret.page_size = $scope.paging.pageSize;    // jshint ignore:line
       return ret;
     };
 
-    var fetchArticles = function() {
+    self.fetchArticles = function() {
       $scope.status.loading = true;
       $scope.results.articles = [];
       $http({
         method: 'get',
         url: env.apiUrl + 'articles/',
-        params: serialize()
+        params: self.serialize()
       }).then(
-        handleSuccess,
-        handleError
+        self.handleSuccess,
+        self.handleError
       );
     };
 
@@ -96,7 +97,7 @@ angular.module('neuroApp')
       }
       $scope.paging.currentPage = 1;
       $scope.status.showPaging = false;
-      fetchArticles();
+      self.fetchArticles();
     };
 
   });

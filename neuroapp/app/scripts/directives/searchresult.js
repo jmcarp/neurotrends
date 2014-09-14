@@ -23,7 +23,7 @@ angular.module('neuroApp')
         result: '='
       },
       templateUrl: 'scripts/directives/search-result.html',
-      controller: function($scope, $sce) {
+      controller: function($scope, $sce, moment) {
 
         $scope.showTags = false;
         $scope.tagIndex = null;

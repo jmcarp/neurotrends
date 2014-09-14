@@ -39,7 +39,7 @@ angular.module('neuroApp')
         queued.push(label);
         Tag.counts(label).then(loadTagsSuccess);
       }
-    }
+    };
 
     var sortSeries = function() {
       var label;
