@@ -8,7 +8,7 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('SearchCtrl', function ($scope, $http, Tag, env, _) {
+  .controller('SearchCtrl', function ($scope, Article, Tag, _) {
 
     var self = this;
 
@@ -33,10 +33,10 @@ angular.module('neuroApp')
 
     $scope.Tag = Tag;
 
-    self.handleSuccess = function(response) {
+    self.handleSuccess = function(payload) {
       $scope.searchForm.$setPristine();
-      $scope.results.articles = response.data.results;
-      $scope.results.numResults = response.data.count;
+      $scope.results.articles = payload.results;
+      $scope.results.numResults = payload.count;
       $scope.paging.pageStart = ($scope.paging.currentPage - 1) * $scope.paging.pageSize + 1;
       $scope.paging.pageEnd = Math.min($scope.paging.currentPage * $scope.paging.pageSize, $scope.results.numResults);
       $scope.status.loading = false;
@@ -81,11 +81,8 @@ angular.module('neuroApp')
     self.fetchArticles = function() {
       $scope.status.loading = true;
       $scope.results.articles = [];
-      $http({
-        method: 'get',
-        url: env.apiUrl + 'articles/',
-        params: self.serialize()
-      }).then(
+      var params = self.serialize();
+      Article.query(params).then(
         self.handleSuccess,
         self.handleError
       );

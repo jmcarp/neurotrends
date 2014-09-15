@@ -15,11 +15,11 @@ angular.module('neuroApp')
       });
     };
 
-    Author.query = function(query) {
+    Author.query = function(params) {
       return $http({
         method: 'get',
         url: baseUrl,
-        params: {fullname: query}
+        params: params
       }).then(function(response) {
         return response.data.results.map(function(author) {
           return new Author(author);
