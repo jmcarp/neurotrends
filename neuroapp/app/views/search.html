@@ -85,6 +85,9 @@
     <i class="fa fa-spinner fa-spin"></i>
     <span>Loading...</span>
 </div>
+<div ng-show="status.noResults">
+    <h3>No results found</h3>
+</div>
 <div ng-show="results.articles.length">
     <h3>
         Showing results {{ paging.pageStart | number }} to {{ paging.pageEnd | number }} of {{ results.numResults | number }}

@@ -23,6 +23,7 @@ angular.module('neuroApp')
     };
     $scope.status = {
       loading: false,
+      noResults: false,
       disableSubmit: true,
       showPaging: false,
     };
@@ -40,7 +41,8 @@ angular.module('neuroApp')
       $scope.paging.pageStart = ($scope.paging.currentPage - 1) * $scope.paging.pageSize + 1;
       $scope.paging.pageEnd = Math.min($scope.paging.currentPage * $scope.paging.pageSize, $scope.results.numResults);
       $scope.status.loading = false;
-      $scope.status.showPaging = true;
+      $scope.status.noResults = payload.count === 0;
+      $scope.status.showPaging = payload.count > $scope.paging.pageSize;
     };
     self.handleError = function() {
       $scope.status.loading = false;
