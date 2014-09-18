@@ -12,6 +12,15 @@ INDICES = {
         [('_lrecord.FAU', pymongo.ASCENDING)],
         [('tags.label', pymongo.ASCENDING)],
     ],
+    'tag_year_counts': [
+        [('_id.label', pymongo.ASCENDING)],
+    ],
+    'tag_author_counts': [
+        [('_id.authorId', pymongo.ASCENDING)],
+    ],
+    'tag_place_counts': [
+        [('_id.authorId', pymongo.ASCENDING)],
+    ],
 }
 
 
