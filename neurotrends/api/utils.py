@@ -240,14 +240,31 @@ def get_tag_counts(label, normalize, years=None):
 
 
 def get_tag_author_counts(author_id):
-    record = config.tag_author_counts_collection.find_one({'_id': author_id})
-    if not record:
-        raise ValueError(
-            'Tag counts not found for author {0}'.format(author_id)
+    counts = [
+        (record['_id']['label'], record['value'])
+        for record in config.tag_author_counts_collection.find(
+            {'_id.authorId': author_id}
         )
-    value = {
-        label: int(count)
-        for label, count in record['value'].iteritems()
-    }
-    return sort_dict(value, lambda pair: pair[0])
+    ]
+    return collections.OrderedDict(
+        sorted(
+            counts,
+            key=lambda item: item[0]
+        )
+    )
+
+
+def get_tag_place_counts(place):
+    counts = [
+        (record['_id']['label'], record['value'])
+        for record in config.tag_place_counts_collection.find(
+            {'_id.place': place}
+        )
+    ]
+    return collections.OrderedDict(
+        sorted(
+            counts,
+            key=lambda item: item[0]
+        )
+    )
 

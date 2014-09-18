@@ -77,16 +77,48 @@ def test_get_record_by_id_not_found(scratch_models):
 
 @pytest.yield_fixture
 def scratch_tag_author_counts(scratch_models):
-    config.tag_author_counts_collection.insert({
-        '_id': '12345',
-        'value': {
-            'smooth': 2,
-            'normalize': 5,
+    config.tag_author_counts_collection.insert([
+        {
+            '_id': {
+                'authorId': '12345',
+                'label': 'smooth',
+            },
+            'value': 2,
         },
-    })
+        {
+            '_id': {
+                'authorId': '12345',
+                'label': 'normalize',
+            },
+            'value': 5,
+        },
+    ])
     yield
-    # Must clear fake count as `scratch_models` is module-scoped
-    config.tag_author_counts_collection.remove({'_id': '12345'})
+    # Must clear fake counts as `scratch_models` is module-scoped
+    config.tag_author_counts_collection.remove({'_id.authorId': '12345'})
+
+
+@pytest.yield_fixture
+def scratch_tag_place_counts(scratch_models):
+    config.tag_place_counts_collection.insert([
+        {
+            '_id': {
+                'place': 'London',
+                'label': 'spm',
+            },
+            'value': 5,
+        },
+        {
+            '_id': {
+                'place': 'London',
+                'label': 'fsl',
+            },
+            'value': 1,
+        },
+    ])
+    yield
+    # Must clear fake counts as `scratch_models` is module-scoped
+    config.tag_place_counts_collection.remove({'_id.place': '12345'})
 
 
 def test_get_tags_by_author(scratch_tag_author_counts):
@@ -97,9 +129,12 @@ def test_get_tags_by_author(scratch_tag_author_counts):
     ])
 
 
-def test_get_tags_by_author_not_found(scratch_tag_author_counts):
-    with pytest.raises(ValueError):
-        utils.get_tag_author_counts('54321')
+def test_get_tags_by_place(scratch_tag_place_counts):
+    serialized = utils.get_tag_place_counts('London')
+    assert serialized == collections.OrderedDict([
+        ('fsl', 1),
+        ('spm', 5),
+    ])
 
 
 @pytest.fixture

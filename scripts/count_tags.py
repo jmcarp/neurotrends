@@ -35,12 +35,32 @@ tag_year_mapper = Code('''function() {
 
 
 tag_author_mapper = Code('''function() {
-    var counts = {};
-    for (var i=0; i<this.tags.length; i++) {
-        counts[this.tags[i].label] = 1;
-    }
     for (var i=0; i<this.authors.length; i++) {
-        emit(this.authors[i], counts);
+        for (var j=0; j<this.tags.length; j++) {
+            emit(
+                {
+                    authorId: this.authors[i],
+                    label: this.tags[j].label
+                },
+                1
+            )
+        }
+    }
+}''')
+
+
+tag_place_mapper = Code('''function() {
+    if (!this.place) {
+        return;
+    }
+    for (var i=0; i<this.tags.length; i++) {
+        emit(
+            {
+                place: this.place,
+                label: this.tags[i].label
+            },
+            1
+        )
     }
 }''')
 
@@ -51,21 +71,6 @@ count_reducer = Code('''function(key, values) {
         total += values[i];
     }
     return total;
-}''')
-
-
-count_object_reducer = Code('''function(key, values) {
-    var counts = {};
-    var labels, label, count;
-    for (var i=0; i<values.length; i++) {
-        labels = Object.keys(values[i]);
-        for (var j=0; j<labels.length; j++) {
-            label = labels[j];
-            count = values[i][label];
-            counts[label] = counts[label] ? counts[label] + count : count;
-        }
-    }
-    return counts;
 }''')
 
 
@@ -93,10 +98,18 @@ def count_tags_by_year():
     )
 
 
+def count_tags_by_place():
+    config.mongo['article'].map_reduce(
+        tag_place_mapper,
+        count_reducer,
+        out={'replace': config.tag_place_counts_collection.name},
+    )
+
+
 def count_tags_by_author():
     config.mongo['article'].map_reduce(
         tag_author_mapper,
-        count_object_reducer,
+        count_reducer,
         out={'replace': config.tag_author_counts_collection.name},
     )
 
@@ -105,5 +118,6 @@ if __name__ == '__main__':
     count_tags()
     count_by_year()
     count_tags_by_year()
+    count_tags_by_place()
     count_tags_by_author()
 

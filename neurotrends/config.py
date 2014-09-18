@@ -30,6 +30,7 @@ def make_collection_proxy(collection_name):
 tag_counts_collection = make_collection_proxy('tag_counts')
 year_counts_collection = make_collection_proxy('year_counts')
 tag_year_counts_collection = make_collection_proxy('tag_year_counts')
+tag_place_counts_collection = make_collection_proxy('tag_place_counts')
 tag_author_counts_collection = make_collection_proxy('tag_author_counts')
 stats_collection = make_collection_proxy('stats')
 
