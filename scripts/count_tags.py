@@ -20,6 +20,13 @@ year_mapper = Code('''function() {
 }''')
 
 
+place_mapper = Code('''function() {
+    if (this.place && this.verified.length) {
+        emit(this.place, 1);
+    }
+}''')
+
+
 tag_year_mapper = Code('''function() {
     var year = this.date ? this.date.getFullYear() : null;
     for (var i=0; i<this.tags.length; i++) {
@@ -90,6 +97,14 @@ def count_by_year():
     )
 
 
+def count_by_place():
+    config.mongo['article'].map_reduce(
+        place_mapper,
+        count_reducer,
+        out={'replace': config.place_counts_collection.name},
+    )
+
+
 def count_tags_by_year():
     config.mongo['article'].map_reduce(
         tag_year_mapper,
@@ -117,6 +132,7 @@ def count_tags_by_author():
 if __name__ == '__main__':
     count_tags()
     count_by_year()
+    count_by_place()
     count_tags_by_year()
     count_tags_by_place()
     count_tags_by_author()
