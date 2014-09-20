@@ -75,9 +75,19 @@ def test_get_record_by_id_not_found(scratch_models):
         )
 
 
-@pytest.yield_fixture
-def scratch_tag_author_counts(scratch_models):
-    config.tag_author_counts_collection.insert([
+def scratch_record_factory(collection, records):
+    @pytest.yield_fixture
+    def fixture(scratch_models):
+        collection.insert(records)
+        yield
+        for record in records:
+            collection.remove(record)
+    return fixture
+
+
+scratch_tag_author_counts = scratch_record_factory(
+    config.tag_author_counts_collection,
+    [
         {
             '_id': {
                 'authorId': '12345',
@@ -92,15 +102,19 @@ def scratch_tag_author_counts(scratch_models):
             },
             'value': 5,
         },
-    ])
-    yield
-    # Must clear fake counts as `scratch_models` is module-scoped
-    config.tag_author_counts_collection.remove({'_id.authorId': '12345'})
+    ]
+)
 
 
-@pytest.yield_fixture
-def scratch_tag_place_counts(scratch_models):
-    config.tag_place_counts_collection.insert([
+scratch_place_counts = scratch_record_factory(
+    config.place_counts_collection,
+    {'_id': 'London', 'value': 10}
+)
+
+
+scratch_tag_place_counts = scratch_record_factory(
+    config.tag_place_counts_collection,
+    [
         {
             '_id': {
                 'place': 'London',
@@ -115,10 +129,8 @@ def scratch_tag_place_counts(scratch_models):
             },
             'value': 1,
         },
-    ])
-    yield
-    # Must clear fake counts as `scratch_models` is module-scoped
-    config.tag_place_counts_collection.remove({'_id.place': '12345'})
+    ]
+)
 
 
 def test_get_tags_by_author(scratch_tag_author_counts):
@@ -130,10 +142,18 @@ def test_get_tags_by_author(scratch_tag_author_counts):
 
 
 def test_get_tags_by_place(scratch_tag_place_counts):
-    serialized = utils.get_tag_place_counts('London')
+    serialized = utils.get_tag_place_counts('London', normalize=False)
     assert serialized == collections.OrderedDict([
         ('fsl', 1),
         ('spm', 5),
+    ])
+
+
+def test_get_tags_by_place_normalize(scratch_tag_place_counts, scratch_place_counts):
+    serialized = utils.get_tag_place_counts('London', normalize=True)
+    assert serialized == collections.OrderedDict([
+        ('fsl', 0.1),
+        ('spm', 0.5),
     ])
 
 
