@@ -153,7 +153,12 @@ tag_args = {
 }
 
 tag_count_args = {
-    'normalize': utils.make_bool_arg(default=True),
+    'normalize': utils.make_bool_arg(default=False),
+}
+
+
+place_count_args = {
+    'normalize': utils.make_bool_arg(default=False),
 }
 
 
@@ -256,6 +261,22 @@ def tag_counts(tag_id):
     return collections.OrderedDict([
         ('label', tag_id),
         ('counts', counts),
+    ])
+
+
+@app.route('/places/tags/top/', methods=['GET'])
+def tag_counts_top_places():
+    args = parser.parse(place_count_args, request)
+    places = utils.get_places(limit=10)
+    return collections.OrderedDict([
+        (
+            place['_id'],
+            utils.get_tag_place_counts(
+                place['_id'],
+                normalize=args['normalize'],
+            )
+        )
+        for place in places
     ])
 
 

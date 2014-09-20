@@ -9,6 +9,7 @@ from flask.ext.api import exceptions
 from flask import request
 from modularodm import Q
 from webargs import Arg
+import pymongo
 
 from neurotrends import config
 
@@ -254,9 +255,30 @@ def get_tag_author_counts(author_id):
     )
 
 
-def get_tag_place_counts(place):
+def get_places(limit):
+    return config.place_counts_collection.find(
+        {}
+    ).sort(
+        'value', pymongo.DESCENDING
+    ).limit(
+        limit
+    )
+
+
+def divide(num, denom):
+    if denom is None:
+        return num
+    return num / denom
+
+
+def get_tag_place_counts(place, normalize):
+    if normalize:
+        total = config.place_counts_collection.find_one({'_id': place})
+        denom = total['value']
+    else:
+        denom = None
     counts = [
-        (record['_id']['label'], record['value'])
+        (record['_id']['label'], divide(int(record['value']), denom))
         for record in config.tag_place_counts_collection.find(
             {'_id.place': place}
         )
