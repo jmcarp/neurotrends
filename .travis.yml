@@ -20,6 +20,10 @@ install:
   - travis_retry pip install invoke
   - travis_retry invoke install_conda --yes
   - travis_retry invoke install_pip
+  # Install client requirements
+  - (cd neuroapp && npm install && npm install grunt-cli && npm install bower && bower install)
 
-script: invoke test
+script:
+  - invoke test
+  - (cd neuroapp && grunt test)
 
