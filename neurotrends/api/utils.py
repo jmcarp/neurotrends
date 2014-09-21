@@ -18,7 +18,6 @@ class lazyproperty(object):
     """Cached property method decorator.
 
     :param method: Method to cache
-
     """
     def __init__(self, method):
         self.data = weakref.WeakKeyDictionary()
@@ -52,7 +51,6 @@ def get_record_by_id(record_id, record_model, record_serializer):
     :param record_id: Record primary key
     :param record_model: Model class
     :param record_serializer: Serializer class
-
     """
     record = record_model.load(record_id)
     if record is None:
@@ -66,7 +64,6 @@ class QueryFieldTranslator(object):
 
     :param field: Model field name
     :param operator: Query operator
-
     """
     def __init__(self, field, operator='eq'):
         self.field = field
@@ -81,7 +78,6 @@ class QueryTranslator(object):
 
     :param model: Schema class
     :param kwargs: Mapping of field names to translator callables
-
     """
     def __init__(self, model, **kwargs):
         self.model = model
@@ -200,7 +196,6 @@ def get_tag_counts(label, normalize, years=None):
     :param str label: Tag label
     :param bool normalize: Normalize by total article counts
     :param list years: Years to include; use all years if `None`
-
     """
     tag_collection = config.tag_year_counts_collection
     tag_counts = {
@@ -272,16 +267,22 @@ def divide(num, denom):
 
 
 def get_tag_place_counts(place, normalize):
+    records = config.tag_place_counts_collection.find({'_id.place': place})
+    if not records.count():
+        raise exceptions.NotFound()
     if normalize:
         total = config.place_counts_collection.find_one({'_id': place})
+        if not total:
+            raise exceptions.NotFound()
         denom = total['value']
     else:
         denom = None
     counts = [
-        (record['_id']['label'], divide(int(record['value']), denom))
-        for record in config.tag_place_counts_collection.find(
-            {'_id.place': place}
+        (
+            record['_id']['label'],
+            divide(int(record['value']), denom)
         )
+        for record in records
     ]
     return collections.OrderedDict(
         sorted(
