@@ -1,0 +1,32 @@
+<h3 ng-show="!series.length">
+    Add tags to view counts by place
+</h3>
+
+<tags-input
+        id="searchTags"
+        ng-model="tags"
+        min-length="2"
+        display-property="label"
+        add-from-autocomplete-only="true"
+    >
+    <auto-complete
+                source="Tag.list($query)"
+                min-length="2"
+        ></auto-complete>
+</tags-input>
+
+<div ng-show="series.length">
+    <nvd3-multi-bar-horizontal-chart
+            data="series"
+            showXAxis="true"
+            showYAxis="true"
+            margin="{left: 200}"
+            height="500"
+            showLegend="true"
+            interactive="true"
+            tooltips="true"
+            rotateLabels="90"
+            objectEquality="true"
+        ></nvd3-multi-bar-horizontal-chart>
+</div>
+

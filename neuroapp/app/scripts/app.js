@@ -43,6 +43,10 @@ var app = angular
         templateUrl: 'views/author-tags.html',
         controller: 'AuthorTagsCtrl'
       })
+      .when('/trends/places', {
+        templateUrl: 'views/place-tags.html',
+        controller: 'PlaceTagsCtrl'
+      })
       .when('/api', {
         templateUrl: 'views/api.html',
         controller: 'ApiCtrl'

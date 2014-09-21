@@ -4,7 +4,7 @@
  * @ngdoc function
  * @name neuroApp.controller:AuthorTagsCtrl
  * @description
- * # TagsCtrl
+ * # AuthorTagsCtrl
  * Controller of the neuroApp
  */
 angular.module('neuroApp')

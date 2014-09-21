@@ -24,7 +24,7 @@ angular.module('neuroApp')
       return $http({
         method: 'get',
         url: baseUrl + label + '/counts/',
-        params: {normalize: 'true'},
+        params: {normalize: normalize},
       });
     };
 

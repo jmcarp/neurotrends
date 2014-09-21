@@ -12,8 +12,8 @@ angular.module('neuroApp')
         method: 'get',
         url: baseUrl
       }).then(function(response) {
-        return response.data
-      });;
+        return response.data;
+      });
     };
 
     return Stats;
