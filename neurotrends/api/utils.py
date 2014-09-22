@@ -12,6 +12,8 @@ from webargs import Arg
 import pymongo
 
 from neurotrends import config
+from neurotrends import pattern
+from neurotrends import tagger
 
 
 class lazyproperty(object):
@@ -289,5 +291,15 @@ def get_tag_place_counts(place, normalize):
             counts,
             key=lambda item: item[0]
         )
+    )
+
+
+def extract_tags(text):
+    return sum(
+        [
+            [dict(tag) for tag in tagger.tag(tag_group, text)]
+            for tag_group in pattern.tag_groups.itervalues()
+        ],
+        []
     )
 

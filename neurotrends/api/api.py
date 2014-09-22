@@ -162,6 +162,15 @@ place_count_args = {
 }
 
 
+extract_args = {
+    'text': Arg(
+        str,
+        required=True,
+        use=lambda value: value.strip()
+    ),
+}
+
+
 # View functions
 
 @app.route('/articles/<article_id>/', methods=['GET'])
@@ -292,6 +301,13 @@ def tag_counts_top_places():
         )
         for place in places
     ])
+
+
+@app.route('/extract/', methods=['POST'])
+def extract_tags():
+    args = parser.parse(extract_args, request)
+    tags = utils.extract_tags(args['text'])
+    return {'tags': tags}
 
 
 # Set up CORS headers

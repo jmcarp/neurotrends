@@ -268,3 +268,9 @@ def test_sort_dict_values():
     result = utils.sort_dict(data, key)
     assert result.keys() == range(5)[::-1]
 
+
+def test_extract_tags():
+    tags = utils.extract_tags('we used slice timing correction in SPM 8')
+    assert len(tags) == 2
+    assert set([tag['label'] for tag in tags]) == set(('stc', 'spm'))
+

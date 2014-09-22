@@ -30,3 +30,16 @@ def test_author_not_found(test_app, scratch_models):
     resp = test_app.get('/authors/missing/', expect_errors=True)
     assert resp.status_code == 404
 
+
+def test_extract_tags(test_app):
+    text = 'we used slice timing correction in SPM 8'
+    resp = test_app.post('/extract/', params={'text': text})
+    tags = resp.json['tags']
+    assert len(tags) == 2
+    assert set([tag['label'] for tag in tags]) == set(('stc', 'spm'))
+
+
+def test_extract_tags_with_no_text_raises_400(test_app):
+    resp = test_app.post('/extract/', expect_errors=True)
+    assert resp.status_code == 400
+
