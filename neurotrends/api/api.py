@@ -7,8 +7,11 @@ import collections
 
 from flask import request, url_for
 from flask.ext.api import FlaskAPI, status, exceptions
+from flask.ext.cors import CORS
+
 from webargs.flaskparser import FlaskParser
 from webargs import Arg
+
 from modularodm import Q
 
 from neurotrends.config import (
@@ -21,6 +24,9 @@ from . import serializers, settings, utils
 
 
 app = FlaskAPI(__name__)
+app.config['CORS_HEADERS'] = 'Content-Type'
+cors = CORS(app)
+
 parser = FlaskParser()
 
 
@@ -305,20 +311,9 @@ def tag_counts_top_places():
 
 @app.route('/extract/', methods=['POST'])
 def extract_tags():
-    args = parser.parse(extract_args, request)
+    args = parser.parse(extract_args, request, targets=('json',))
     tags = utils.extract_tags(args['text'])
     return {'tags': tags}
-
-
-# Set up CORS headers
-
-@app.after_request
-def add_cors_headers(response):
-    response.headers.extend({
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST',
-    })
-    return response
 
 
 # Configure application

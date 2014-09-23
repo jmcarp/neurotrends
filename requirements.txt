@@ -8,16 +8,17 @@ furl==0.3.95
 python-dateutil==2.2
 
 # From GitHub
--e git+https://github.com/CenterForOpenScience/modular-odm@develop#egg=modular-odm
--e git+https://github.com/jmcarp/sciscrape#egg=sciscrape
--e git+https://github.com/euske/pdfminer#egg=pdfminer
+git+https://github.com/CenterForOpenScience/modular-odm@develop
+git+https://github.com/jmcarp/sciscrape
+git+https://github.com/jmcarp/flask-api
+git+https://github.com/euske/pdfminer
 
 # Non-Conda scientific stack
 seaborn==0.4.0
 
 # API tools
 Flask==0.10.1
-Flask-API==0.6.2
+Flask-Cors==1.9.0
 Werkzeug==0.9.6
 marshmallow==0.7.0
 webargs==0.5.1

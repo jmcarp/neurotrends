@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import json
 import pytest
 
 from tests.fixtures import test_app, scratch_models
@@ -33,7 +34,11 @@ def test_author_not_found(test_app, scratch_models):
 
 def test_extract_tags(test_app):
     text = 'we used slice timing correction in SPM 8'
-    resp = test_app.post('/extract/', params={'text': text})
+    resp = test_app.post(
+        '/extract/',
+        params=json.dumps({'text': text}),
+        headers={'Content-Type': 'application/json'},
+    )
     tags = resp.json['tags']
     assert len(tags) == 2
     assert set([tag['label'] for tag in tags]) == set(('stc', 'spm'))
