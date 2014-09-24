@@ -170,7 +170,7 @@ place_count_args = {
 
 extract_args = {
     'text': Arg(
-        str,
+        unicode,
         required=True,
         use=lambda value: value.strip()
     ),
