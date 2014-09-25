@@ -40,6 +40,8 @@ AUTHOR_PAGE_SIZE_DEFAULT  = 20
 AUTHOR_PAGE_SIZE_OPTIONS  = [10, 20, 50]
 AUTHOR_SORT_DEFAULT       = 'lastname'
 
+STATS_FIELDS = ['firstYear', 'lastYear', 'numArticles', 'numTags']
+
 
 # Query args
 
@@ -179,6 +181,18 @@ extract_args = {
 
 # View functions
 
+@app.route('/', methods=['GET'])
+def index():
+    return {
+        'message': 'Welcome to the NeuroTrends API',
+        '_links': collections.OrderedDict([
+            ('articles', url_for('articles', _external=True)),
+            ('authors', url_for('authors', _external=True)),
+            ('statistics', url_for('stats', _external=True)),
+        ]),
+    }
+
+
 @app.route('/articles/<article_id>/', methods=['GET'])
 def article(article_id):
     return utils.get_record_by_id(
@@ -240,8 +254,10 @@ def authors():
 @app.route('/stats/', methods=['GET'])
 def stats():
     data = stats_collection.find_one({'_id': 'stats'})
-    del data['_id']
-    return data
+    return collections.OrderedDict([
+        (key, data[key])
+        for key in STATS_FIELDS
+    ])
 
 
 @app.route('/tags/', methods=['GET'])
