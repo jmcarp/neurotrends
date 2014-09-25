@@ -32,6 +32,7 @@ module.exports = function(config) {
       'bower_components/angularjs-nvd3-directives/dist/angularjs-nvd3-directives.js',
       'bower_components/moment/moment.js',
       'bower_components/lodash/dist/lodash.compat.js',
+      'bower_components/angular-elastic/elastic.js',
       'app/scripts/**/*.js',
       'test/mock/**/*.js',
       'test/spec/**/*.js'

@@ -1,16 +1,5 @@
 'use strict';
 
-// From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
-function escapeRegex(string){
-  return string.replace(/([.*+?^${}()|\[\]\/\\])/g, '\\$1');
-}
-
-var highlightText = function(text, highlight, className) {
-  className = className || 'highlight';
-  var pattern = new RegExp('(' + escapeRegex(highlight) + ')');
-  return text.replace(pattern, '<span class="' + className + '">$1</span>');
-};
-
 /**
  * @ngdoc function
  * @name neuroApp.directive:SearchResult
@@ -23,7 +12,7 @@ angular.module('neuroApp')
         result: '='
       },
       templateUrl: 'scripts/directives/search-result.html',
-      controller: function($scope, $sce, moment) {
+      controller: function($scope, Utils, moment) {
 
         $scope.showTags = false;
         $scope.tagIndex = null;
@@ -52,9 +41,7 @@ angular.module('neuroApp')
           var key;
           for (var i=0; i<keys.length; i++) {
             key = keys[i];
-            ret[key] = $sce.trustAsHtml(
-                highlightText(tag.context[key], tag.group[key], 'context-highlight')
-            );
+            ret[key] = Utils.highlightText(tag.context[key], tag.group[key], 'context-highlight');
           }
           return ret;
         };

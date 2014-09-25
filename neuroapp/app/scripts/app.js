@@ -18,6 +18,7 @@ var app = angular
     'ngTagsInput',
     'ui.bootstrap',
     'nvd3ChartDirectives',
+    'monospaced.elastic',
     'config'
   ])
   .config(function ($routeProvider) {
@@ -46,6 +47,10 @@ var app = angular
       .when('/trends/places', {
         templateUrl: 'views/place-tags.html',
         controller: 'PlaceTagsCtrl'
+      })
+      .when('/tools/extract', {
+        templateUrl: 'views/extract.html',
+        controller: 'ExtractCtrl'
       })
       .when('/api', {
         templateUrl: 'views/api.html',

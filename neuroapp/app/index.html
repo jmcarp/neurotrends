@@ -42,6 +42,14 @@
               <li><a ng-href="#/trends/places">Places</a></li>
             </ul>
           </li>
+          <li class="dropdown" ng-class="{active: isActive('/tools', true)}">
+            <a class="dropdown-toggle" href="#">
+              Tools <span class="caret"></span>
+            </a>
+            <ul class="dropdown-menu" role="menu">
+              <li><a ng-href="#/tools/extract">Extract</a></li>
+            </ul>
+          </li>
           <li ng-class="{active: isActive('/api')}"><a ng-href="#/api">API</a></li>
         </ul>
         <h3 class="text-muted">NeuroTrends</h3>
@@ -87,6 +95,7 @@
     <script src="bower_components/angularjs-nvd3-directives/dist/angularjs-nvd3-directives.js"></script>
     <script src="bower_components/moment/moment.js"></script>
     <script src="bower_components/lodash/dist/lodash.compat.js"></script>
+    <script src="bower_components/angular-elastic/elastic.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
 
@@ -99,6 +108,7 @@
         <script src="scripts/services/stats.js"></script>
         <script src="scripts/services/tag.js"></script>
         <script src="scripts/services/utils.js"></script>
+        <script src="scripts/services/extract.js"></script>
         <script src="scripts/services/imports.js"></script>
         <script src="scripts/directives/searchresult.js"></script>
         <script src="scripts/controllers/nav.js"></script>
@@ -108,6 +118,7 @@
         <script src="scripts/controllers/tags.js"></script>
         <script src="scripts/controllers/authortags.js"></script>
         <script src="scripts/controllers/placetags.js"></script>
+        <script src="scripts/controllers/extract.js"></script>
         <script src="scripts/controllers/api.js"></script>
         <script src="scripts/controllers/placetags.js"></script>
         <!-- endbuild -->

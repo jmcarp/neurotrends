@@ -1,0 +1,37 @@
+<h3>
+    Enter text to extract tags
+</h3>
+
+<form
+        role="form"
+        name="extractForm"
+        class="form-horizontal"
+        ng-submit="submit(extractForm)"
+    >
+
+    <div class="form-group">
+        <textarea
+                class="form-control msd-elastic"
+                ng-model="params.text"
+                required></textarea>
+    </div>
+
+    <div class="form-group">
+        <button
+                class="btn"
+                type="submit"
+                ng-disabled="disableSubmit"
+                ng-class="{
+                    'btn-primary': !disableSubmit,
+                    'btn-default': disableSubmit,
+                }"
+            >Submit</button>
+    </div>
+
+</form>
+
+<dl class="dl-horizontal">
+    <dt ng-repeat-start="tag in tags">{{ tag.label }}</dt>
+    <dd ng-repeat-end><span ng-bind-html="tag.highlight"></span></dd>
+</dl>
+
