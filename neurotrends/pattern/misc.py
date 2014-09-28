@@ -1,4 +1,9 @@
+# -*- coding: utf-8 -*-
+
+import functools
+
 from neurotrends.config import re
+
 
 delimiter = r'\s*'
 float_ptn = u'[-+]?\d*\.?\d+'
@@ -30,3 +35,27 @@ version_separator = r'''
 '''.format(
     skip=re.escape(',;:-(') + '\s'
 )
+
+
+def clean_unicode(text):
+    """Replace unicode characters with similar ASCII characters.
+    """
+    return text.replace(
+        u'\u2044', '/'
+    ).replace(
+        u'\u2212', '-'
+    )
+
+
+def clean_delimiters(text):
+    return re.sub(r'[\s\-,]+', ' ', text)
+
+
+def compose(*funcs):
+    return functools.reduce(
+        lambda f, g: lambda x: g(f(x)),
+        funcs,
+    )
+
+clean = compose(clean_unicode, clean_delimiters)
+

@@ -14,6 +14,7 @@ from sciscrape.utils import pubtools
 from sciscrape.exceptions import ScrapeError
 
 from neurotrends import pattern, tagger, util
+from neurotrends.pattern.misc import clean
 from neurotrends.config import mongo, re
 
 from .config import (
@@ -384,10 +385,7 @@ class Article(StoredObject):
                 continue
 
             # Clean document text
-            # TODO: Refactor as helper function
-            doc = doc.replace(u'\u2044', '/')
-            doc = doc.replace(u'\u2212', '-')
-            doc = re.sub(r'[\s\-,]+', ' ', doc)
+            doc = clean(doc)
 
             for tag_group in tag_groups:
 
