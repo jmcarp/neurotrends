@@ -21,6 +21,8 @@ install:
   - travis_retry invoke install_pip
   # Install client requirements
   - (cd neuroapp && npm install && npm install grunt-cli && npm install bower && bower install)
+  # Restore fixture data
+  - invoke restore_cache
 
 script:
   - invoke test

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import datetime
 
 from invoke import task, run
@@ -7,6 +8,7 @@ from invoke import task, run
 
 DB_PATH = '/usr/local/var/mongodb'
 LOG_PATH = '/usr/local/var/log/mongodb/mongo.log'
+MONGO_CACHE_PATH = 'fixtures/mongo/cache'
 
 
 # TODO: Add port, database name to MongoDB tasks
@@ -40,20 +42,38 @@ def get_stats():
 
 
 @task
-def mongodump(path=None):
+def mongodump(path=None, collection=None):
     cmd = 'mongodump --db neurotrends'
     if path:
         cmd += ' --out {0}'.format(path)
+    if collection:
+        cmd += ' --collection {0}'.format(collection)
     run(cmd)
 
 
 @task
-def mongorestore(path='dump/neurotrends', drop=False):
+def mongorestore(path='dump/neurotrends', collection=None, drop=False):
     cmd = 'mongorestore --db neurotrends'
+    if collection:
+        cmd += ' --collection {0}'.format(collection)
     if drop:
         cmd += ' --drop'
     cmd += ' ' + path
     run(cmd)
+
+
+@task
+def dump_cache():
+    mongodump(path=MONGO_CACHE_PATH, collection='cache')
+
+
+@task
+def restore_cache():
+    mongorestore(
+        path=os.path.join(MONGO_CACHE_PATH, 'neurotrends', 'cache.bson'),
+        collection='cache',
+        drop=True,
+    )
 
 
 @task
