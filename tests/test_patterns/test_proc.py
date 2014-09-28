@@ -2,7 +2,7 @@
 
 import pytest
 
-from neurotrends.pattern.proc import proc
+from neurotrends.pattern.proc import taggers
 from neurotrends.pattern.proc.est_highpass_cutoff import highpass_cutoff
 from neurotrends.pattern.proc.est_smooth_kernel import smooth_kernel
 
@@ -30,10 +30,9 @@ from . import check_taggers
     ('stimuli were temporally aligned', None),
     ('reslice using sinc interpolation', None),
     ('sliced using spline interpolation', None),
-
 ])
 def test_stc(input, expected):
-    check_taggers([proc.stc, proc.stc_context], input, expected)
+    check_taggers([taggers.stc, taggers.stc_context], input, expected)
 
 
 @pytest.mark.parametrize('input, expected', [
@@ -46,7 +45,7 @@ def test_stc(input, expected):
     ('correction for slice timing and head motion', {}),
 ])
 def test_realign(input, expected):
-    check_taggers([proc.realign], input, expected)
+    check_taggers([taggers.realign], input, expected)
 
 
 @pytest.mark.parametrize('input, expected', [
@@ -58,7 +57,7 @@ def test_realign(input, expected):
     ('smoothing', None),
 ])
 def test_spatsmoo(input, expected):
-    check_taggers([proc.spatsmoo], input, expected)
+    check_taggers([taggers.spatsmoo], input, expected)
 
 
 @pytest.mark.parametrize('input, expected', [
@@ -79,7 +78,7 @@ def test_spatsmoo(input, expected):
 ])
 def test_motreg(input, expected):
     check_taggers(
-        [proc.motreg, proc.motreg_context, proc.motreg_context_strict],
+        [taggers.motreg, taggers.motreg_context, taggers.motreg_context_strict],
         input,
         expected,
     )
