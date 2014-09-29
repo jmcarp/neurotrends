@@ -12,7 +12,7 @@ angular.module('neuroApp')
         result: '='
       },
       templateUrl: 'scripts/directives/search-result.html',
-      controller: function($scope, Utils, moment) {
+      controller: function($scope, Utils, Links, moment) {
 
         $scope.showTags = false;
         $scope.tagIndex = null;
@@ -56,12 +56,7 @@ angular.module('neuroApp')
           }
         };
 
-        $scope.pubMedUrl = function(pmid) {
-          return 'http://www.ncbi.nlm.nih.gov/pubmed/' + pmid;
-        };
-        $scope.crossRefUrl = function(doi) {
-          return 'http://dx.doi.org/' + doi;
-        };
+        $scope.links = Links.buildLinks($scope.result);
 
       }
     };

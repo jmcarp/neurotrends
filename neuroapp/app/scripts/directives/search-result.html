@@ -10,16 +10,14 @@
     </div>
     <div>
         <a
+                ng-repeat="link in links"
                 target="_blank"
-                ng-show="result.pmid"
-                ng-href="{{ pubMedUrl(result.pmid) }}"
-            >PubMed <i class="fa fa-external-link"></i>
-        </a>
-        <a
-                target="_blank"
-                ng-show="result.doi"
-                ng-href="{{ crossRefUrl(result.doi) }}"
-            >CrossRef <i class="fa fa-external-link"></i>
+                href="{{ link.href }}"
+            >
+                {{ link.label }}
+                <img ng-if="link.icon" ng-src="{{ link.icon }}" />
+                <i ng-if="!link.icon" class="fa fa-external-link"></i>
+                &nbsp;
         </a>
     </div>
     <span ng-click="toggleTags()" style="cursor: pointer;">
