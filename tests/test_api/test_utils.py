@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import division
+
 import collections
 
 import mock
@@ -83,6 +85,190 @@ def scratch_record_factory(collection, records):
         for record in records:
             collection.remove(record)
     return fixture
+
+
+scratch_tag_counts = scratch_record_factory(
+    config.tag_counts_collection,
+    [
+        {'_id': 'spm', 'value': 50},
+        {'_id': 'fsl', 'value': 25},
+        {'_id': 'afni', 'value': 5},
+    ]
+)
+
+
+scratch_version_counts = scratch_record_factory(
+    config.version_counts_collection,
+    [
+        {'_id': {'label': 'spm', 'version': '2'}, 'value': 10},
+        {'_id': {'label': 'spm', 'version': '5'}, 'value': 20},
+        {'_id': {'label': 'fsl', 'version': '5'}, 'value': 15},
+    ]
+)
+
+
+scratch_year_counts = scratch_record_factory(
+    config.year_counts_collection,
+    [
+        {'_id': 2007, 'value': 100},
+        {'_id': 2008, 'value': 150},
+        {'_id': 2009, 'value': 200},
+    ]
+)
+
+
+scratch_tag_year_counts = scratch_record_factory(
+    config.tag_year_counts_collection,
+    [
+        {'_id': {'year': 2007, 'label': 'spm'}, 'value': 25},
+        {'_id': {'year': 2008, 'label': 'spm'}, 'value': 30},
+        {'_id': {'year': 2009, 'label': 'spm'}, 'value': 35},
+        {'_id': {'year': 2007, 'label': 'fsl'}, 'value': 15},
+        {'_id': {'year': 2008, 'label': 'fsl'}, 'value': 20},
+        {'_id': {'year': 2009, 'label': 'fsl'}, 'value': 25},
+    ]
+)
+
+
+scratch_version_year_counts = scratch_record_factory(
+    config.version_year_counts_collection,
+    [
+        {'_id': {'year': 2007, 'label': 'spm', 'version': '2'}, 'value': 15},
+        {'_id': {'year': 2008, 'label': 'spm', 'version': '2'}, 'value': 20},
+        {'_id': {'year': 2009, 'label': 'spm', 'version': '2'}, 'value': 25},
+        {'_id': {'year': 2007, 'label': 'spm', 'version': '5'}, 'value': 10},
+        {'_id': {'year': 2008, 'label': 'spm', 'version': '5'}, 'value': 15},
+        {'_id': {'year': 2009, 'label': 'spm', 'version': '5'}, 'value': 20},
+        {'_id': {'year': 2007, 'label': 'fsl', 'version': '?'}, 'value': 5},
+    ]
+)
+
+
+def test_get_tags_by_label(scratch_tag_counts):
+    expected = [
+        collections.OrderedDict([
+            ('label', 'afni'),
+            ('count', 5,)
+        ]),
+        collections.OrderedDict([
+            ('label', 'fsl'),
+            ('count', 25,)
+        ]),
+    ]
+    counts = utils.get_tags_by_label('f', False)
+    assert counts == expected
+
+
+def test_get_tags_by_label_empty_string(scratch_tag_counts):
+    expected = [
+        collections.OrderedDict([
+            ('label', 'afni'),
+            ('count', 5,)
+        ]),
+        collections.OrderedDict([
+            ('label', 'fsl'),
+            ('count', 25,)
+        ]),
+        collections.OrderedDict([
+            ('label', 'spm'),
+            ('count', 50,)
+        ]),
+    ]
+    counts = utils.get_tags_by_label('', False)
+    assert counts == expected
+
+
+def test_get_tags_versions(scratch_tag_counts, scratch_version_counts):
+    expected = [
+        collections.OrderedDict([
+            ('label', 'fsl'),
+            ('count', 25,)
+        ]),
+    ]
+    counts = utils.get_tags_by_label('f', True)
+    assert counts == expected
+
+
+def test_get_tag_counts(scratch_tag_year_counts):
+    counts = utils.get_tag_counts('spm', normalize=False)
+    expected = [
+        (2007, 25),
+        (2008, 30),
+        (2009, 35),
+    ]
+    for label, count in counts:
+        assert type(label) == int
+        assert type(count) == int
+    assert counts == expected
+
+
+def test_get_tag_counts_normalize(scratch_tag_year_counts, scratch_year_counts):
+    counts = utils.get_tag_counts('spm', normalize=True)
+    expected = [
+        (2007, 25 / 100),
+        (2008, 30 / 150),
+        (2009, 35 / 200),
+    ]
+    for label, count in counts:
+        assert type(label) == int
+        assert type(count) == float
+    assert counts == expected
+
+
+def test_get_tag_version_counts(scratch_version_year_counts):
+    counts = utils.get_tag_version_counts('spm', normalize=False)
+    expected = collections.OrderedDict([
+        (
+            '2',
+            [
+                (2007, 15),
+                (2008, 20),
+                (2009, 25),
+            ],
+        ),
+        (
+            '5',
+            [
+                (2007, 10),
+                (2008, 15),
+                (2009, 20),
+            ],
+        ),
+    ])
+    for version, subcounts in counts.iteritems():
+        assert isinstance(version, basestring)
+        for year, subcount in subcounts:
+            assert type(year) == int
+            assert type(subcount) == int
+    assert counts == expected
+
+
+def test_get_tag_version_counts(scratch_version_year_counts, scratch_year_counts):
+    counts = utils.get_tag_version_counts('spm', normalize=True)
+    expected = collections.OrderedDict([
+        (
+            '2',
+            [
+                (2007, 15 / 100),
+                (2008, 20 / 150),
+                (2009, 25 / 200),
+            ],
+        ),
+        (
+            '5',
+            [
+                (2007, 10 / 100),
+                (2008, 15 / 150),
+                (2009, 20 / 200),
+            ],
+        ),
+    ])
+    for version, subcounts in counts.iteritems():
+        assert isinstance(version, basestring)
+        for year, subcount in subcounts:
+            assert type(year) == int
+            assert type(subcount) == float
+    assert counts == expected
 
 
 scratch_tag_author_counts = scratch_record_factory(

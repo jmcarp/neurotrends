@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import re
 import functools
 import collections
 
@@ -154,10 +153,8 @@ author_sort_translator = utils.SortTranslator(
 
 
 tag_args = {
-    'label': Arg(
-        str,
-        use=lambda value: value.strip()
-    ),
+    'label': Arg(str, default='', use=lambda value: value.strip()),
+    'versions': utils.make_bool_arg(default=False),
 }
 
 tag_count_args = {
@@ -264,20 +261,8 @@ def stats():
 def tags():
     """List tags.
     """
-    query = {}
     args = parser.parse(tag_args, request)
-    label = args.get('label')
-    if label:
-        pattern = re.compile(re.escape(args['label']), re.I)
-        query.update({'_id': {'$regex': pattern}})
-    tags = tag_counts_collection.find(query)
-    return [
-        collections.OrderedDict([
-            ('label', tag['_id']),
-            ('count', int(tag['value'])),
-        ])
-        for tag in tags
-    ]
+    return utils.get_tags_by_label(args['label'], args['versions'])
 
 
 @app.route('/tags/<tag_id>/counts/', methods=['GET'])
@@ -287,6 +272,17 @@ def tag_counts(tag_id):
     tag_id = tag_id.strip().lower()
     args = parser.parse(tag_count_args, request)
     counts = utils.get_tag_counts(tag_id, normalize=args['normalize'])
+    return collections.OrderedDict([
+        ('label', tag_id),
+        ('counts', counts),
+    ])
+
+
+@app.route('/tags/<tag_id>/versions/', methods=['GET'])
+def tag_version_counts(tag_id):
+    tag_id = tag_id.strip().lower()
+    args = parser.parse(tag_count_args, request)
+    counts = utils.get_tag_version_counts(tag_id, normalize=args['normalize'])
     return collections.OrderedDict([
         ('label', tag_id),
         ('counts', counts),

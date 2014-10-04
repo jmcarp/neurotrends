@@ -2,7 +2,9 @@
 
 from __future__ import division
 
+import re
 import weakref
+import itertools
 import collections
 
 from flask.ext.api import exceptions
@@ -192,50 +194,125 @@ def sort_dict(data, key, as_dict=True, **kwargs):
     return ordered
 
 
-def get_tag_counts(label, normalize, years=None):
-    """Fetch tag counts by year, optionally normalized by total article counts
-    per year.
-
-    :param str label: Tag label
-    :param bool normalize: Normalize by total article counts
-    :param list years: Years to include; use all years if `None`
-    """
-    tag_collection = config.tag_year_counts_collection
-    tag_counts = {
-        record['_id']['year']: record['value']
-        for record in tag_collection.find(
-            {'_id.label': label}
-        )
+def get_year_counts():
+    return {
+        record['_id']: record['value']
+        for record in config.year_counts_collection.find()
     }
 
-    if normalize:
-        year_collection = config.year_counts_collection
-        year_counts = {
-            record['_id']: record['value']
-            for record in year_collection.find(
-                {'_id': {'$in': tag_counts.keys()}}
-            )
-        }
-        tag_counts = {
-            year: tag_counts[year] / year_counts[year]
-            for year in tag_counts
-            if year in year_counts
-        }
 
-    if years:
-        year_predicate = lambda key, value: key in years
-    else:
-        year_predicate = lambda key, value: key is not None
-    tag_counts = filter_dict(
-        tag_counts,
-        year_predicate,
-    )
+def normalize_counts(tag_counts, year_counts=None):
+    """Normalize tag counts by total article counts per year.
 
+    :param dict count_records: Tag count records
+    :param dict year_counts: Year count data; pull from database if not provided
+    """
+    year_counts = year_counts or get_year_counts()
+    return {
+        year: tag_counts[year] / year_counts[year]
+        for year in tag_counts
+        if year in year_counts
+    }
+
+
+def sort_counts(tag_counts):
     return sort_dict(
         tag_counts,
         lambda pair: pair[0],
         as_dict=False,
     )
+
+
+def process_version_counts(count_records, year_counts=None):
+    """Reshape list of tag version count records to a dictionary mapping years
+    to tag version counts, optionally normalizing by total article counts per
+    year.
+
+    :param list count_records: Tag version count records
+    :param dict year_counts: Optional year count data
+    """
+    tag_counts = {
+        int(each['_id']['year']): int(each['value'])
+        for each in count_records
+        if each['_id']['year']
+    }
+    if year_counts:
+        tag_counts = normalize_counts(tag_counts, year_counts)
+    return sort_counts(tag_counts)
+
+
+def get_tags_by_label(label, with_versions):
+    """Find tags by partial label, optionally restricting to tags with version
+    information. Used for tag autocomplete.
+
+    :param str label: Tag label substring
+    :param bool with_versions: Restrict to tags with version information
+    :return: List of dictionaries including the label and overall count of each
+        matching tag
+    """
+    pattern = re.escape(label)
+    if with_versions:
+        labels = config.version_counts_collection.find(
+            {'_id.label': {'$regex': pattern}}
+        ).distinct(
+            '_id.label'
+        )
+        query = {'_id': {'$in': labels}}
+    else:
+        query = {'_id': {'$regex': pattern}}
+    counts = config.tag_counts_collection.find(
+        query
+    ).sort(
+        '_id', pymongo.ASCENDING
+    )
+    return [
+        collections.OrderedDict([
+            ('label', count['_id']),
+            ('count', int(count['value'])),
+        ])
+        for count in counts
+    ]
+
+
+def get_tag_counts(label, normalize):
+    """Fetch tag counts by year, optionally normalized by total article counts
+    per year.
+
+    :param str label: Tag label
+    :param bool normalize: Normalize by total article counts
+    """
+    tag_counts = {
+        int(record['_id']['year']): int(record['value'])
+        for record in config.tag_year_counts_collection.find(
+            {'_id.label': label}
+        )
+        if record['_id']['year']
+    }
+    if normalize:
+        tag_counts = normalize_counts(tag_counts)
+    return sort_counts(tag_counts)
+
+
+def get_tag_version_counts(label, normalize):
+    """Fetch tag counts by version by year, optionally normalized by total
+    article counts per year.
+
+    :param str label: Tag label
+    :param bool normalize: Normalize by total article counts
+    """
+    year_counts = get_year_counts() if normalize else None
+    sorted_counts = sorted(
+        config.version_year_counts_collection.find({'_id.label': label}),
+        key=lambda count: count['_id']['version'],
+    )
+    grouped_counts = itertools.groupby(
+        sorted_counts,
+        key=lambda count: count['_id']['version'],
+    )
+    return collections.OrderedDict([
+        (version, process_version_counts(counts, year_counts))
+        for version, counts in grouped_counts
+    ])
 
 
 def get_tag_author_counts(author_id):
@@ -248,7 +325,7 @@ def get_tag_author_counts(author_id):
     return collections.OrderedDict(
         sorted(
             counts,
-            key=lambda item: item[0]
+            key=lambda item: item[0],
         )
     )
 
