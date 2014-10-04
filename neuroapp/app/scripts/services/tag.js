@@ -9,13 +9,11 @@ angular.module('neuroApp')
       angular.extend(this, data);
     };
 
-    Tag.list = function(part) {
+    Tag.list = function(params) {
       return $http({
         method: 'get',
         url: baseUrl,
-        params: {
-          label: part
-        },
+        params: params,
       });
     };
 
