@@ -40,6 +40,11 @@ var app = angular
         controller: 'TagsCtrl',
         reloadOnSearch: false
       })
+      .when('/trends/versions', {
+        templateUrl: 'views/versions.html',
+        controller: 'VersionsCtrl',
+        reloadOnSearch: false
+      })
       .when('/trends/authors', {
         templateUrl: 'views/author-tags.html',
         controller: 'AuthorTagsCtrl'

@@ -5,6 +5,14 @@ angular.module('neuroApp')
 
     var baseUrl = env.apiUrl + 'tags/';
 
+    var countDefaults = {
+      normalize: true,
+    };
+    var versionDefaults = {
+      normalize: true,
+      threshold: 0.01,
+    };
+
     var Tag = function(data) {
       angular.extend(this, data);
     };
@@ -17,12 +25,21 @@ angular.module('neuroApp')
       });
     };
 
-    Tag.counts = function(label, normalize) {
-      normalize = typeof(normalize) === 'undefined' ? true : normalize;
+    Tag.counts = function(label, options) {
+      var params = angular.extend({}, countDefaults, options);
       return $http({
         method: 'get',
         url: baseUrl + label + '/counts/',
-        params: {normalize: normalize},
+        params: params,
+      });
+    };
+
+    Tag.versions = function(label, options) {
+      var params = angular.extend({}, versionDefaults, options);
+      return $http({
+        method: 'get',
+        url: baseUrl + label + '/versions/',
+        params: params,
       });
     };
 

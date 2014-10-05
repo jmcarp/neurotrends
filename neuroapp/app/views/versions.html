@@ -1,0 +1,27 @@
+<div ng-if="!options.length" class="h1">
+    <i class="fa fa-spinner fa-spin"></i>
+    <span>Loading...</span>
+</div>
+
+<select
+        class="form-control"
+        ng-if="options.length"
+        ng-model="chart.tag"
+        ng-options="option.label for option in options"
+    >
+</select>
+
+<div ng-show="chart.series.length">
+    <nvd3-line-chart
+            data="chart.series"
+            yAxisTickFormat="chart.yAxisTickFormat"
+            height="600"
+            showXAxis="true"
+            showYAxis="true"
+            showLegend="true"
+            interactive="true"
+            tooltips="true"
+            objectEquality="true"
+        ></nvd3-line-chart>
+</div>
+
