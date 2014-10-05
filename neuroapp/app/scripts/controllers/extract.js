@@ -14,7 +14,7 @@ angular.module('neuroApp')
 
     $scope.disableSubmit = true;
     $scope.params = {};
-    $scope.tags = [];
+    $scope.tags = null;
 
     self.renderTags = function(tags) {
       _.forEach(tags, function(item) {

@@ -30,6 +30,10 @@
 
 </form>
 
+<h3 ng-if="tags && !tags.length">
+    No tags extracted
+</h3>
+
 <dl class="dl-horizontal">
     <dt ng-repeat-start="tag in tags">{{ tag.label }}</dt>
     <dd ng-repeat-end><span ng-bind-html="tag.highlight"></span></dd>
