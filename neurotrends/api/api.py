@@ -161,6 +161,11 @@ tag_count_args = {
     'normalize': utils.make_bool_arg(default=False),
 }
 
+version_count_args = {
+    'normalize': utils.make_bool_arg(default=False),
+    'threshold': Arg(float, default=0.0),
+}
+
 
 place_count_args = {
     'normalize': utils.make_bool_arg(default=False),
@@ -281,8 +286,12 @@ def tag_counts(tag_id):
 @app.route('/tags/<tag_id>/versions/', methods=['GET'])
 def tag_version_counts(tag_id):
     tag_id = tag_id.strip().lower()
-    args = parser.parse(tag_count_args, request)
-    counts = utils.get_tag_version_counts(tag_id, normalize=args['normalize'])
+    args = parser.parse(version_count_args, request)
+    counts = utils.get_tag_version_counts(
+        tag_id,
+        normalize=args['normalize'],
+        threshold=args['threshold'],
+    )
     return collections.OrderedDict([
         ('label', tag_id),
         ('counts', counts),

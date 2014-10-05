@@ -293,7 +293,68 @@ def get_tag_counts(label, normalize):
     return sort_counts(tag_counts)
 
 
-def get_tag_version_counts(label, normalize):
+def get_tag_counts_other(label, versions):
+    version_counts = config.version_year_counts_collection.find({
+        '_id.label': label,
+        '_id.version': {'$in': versions},
+    })
+    grouped_counts = group_by(
+        version_counts,
+        lambda count: count['_id']['year'],
+    )
+    other_counts = collections.defaultdict(int)
+    for year, counts in grouped_counts:
+        for count in counts:
+            other_counts[year] += count['value']
+    return [
+        {
+            '_id': {
+                'label': label,
+                'version': 'other',
+                'year': year,
+            },
+            'value': count
+        }
+        for year, count in other_counts.iteritems()
+    ]
+
+
+def get_versions_below_threshold(label, threshold):
+    """Find versions of tag `label` that occur at a frequency of less than
+    `threshold` proportion of total tag occurrences.
+
+    :param str label: Tag label
+    :param float threshold: Proportion threshold (between 0 and 1)
+    """
+    count = config.tag_counts_collection.find_one({'_id': label})
+    count_threshold = count['value'] * threshold
+    return config.version_counts_collection.find({
+        '_id.label': label,
+        'value': {'$lt': count_threshold},
+    }).distinct(
+        '_id.version'
+    )
+
+
+version_label_map = {
+    '?': 'unknown',
+}
+
+
+def group_by(items, key):
+    """The built-in `itertools.groupby` requires the input data to be sorted;
+    this helper sorts and groups the data using the same key function.
+
+    :param items: Iterable of items to group
+    :param key: Callable that takes an item and returns the sort key
+    """
+    return itertools.groupby(
+        sorted(items, key=key),
+        key=key,
+    )
+
+
+def get_tag_version_counts(label, normalize, threshold=None):
     """Fetch tag counts by version by year, optionally normalized by total
     article counts per year.
 
@@ -301,13 +362,28 @@ def get_tag_version_counts(label, normalize):
     :param bool normalize: Normalize by total article counts
     """
     year_counts = get_year_counts() if normalize else None
-    sorted_counts = sorted(
-        config.version_year_counts_collection.find({'_id.label': label}),
-        key=lambda count: count['_id']['version'],
-    )
-    grouped_counts = itertools.groupby(
-        sorted_counts,
-        key=lambda count: count['_id']['version'],
+    if threshold is not None:
+        other_versions = get_versions_below_threshold(label, threshold)
+        version_counts = config.version_year_counts_collection.find({
+            '_id.label': label,
+            '_id.version': {'$nin': other_versions},
+        })
+        version_counts = list(version_counts)
+        if other_versions:
+            version_counts += get_tag_counts_other(label, other_versions)
+    else:
+        version_counts = list(
+            config.version_year_counts_collection.find(
+                {'_id.label': label}
+            )
+        )
+    # Map version labels
+    for count in version_counts:
+        version = count['_id']['version']
+        count['_id']['version'] = version_label_map.get(version, version)
+    grouped_counts = group_by(
+        version_counts,
+        lambda count: count['_id']['version'],
     )
     return collections.OrderedDict([
         (version, process_version_counts(counts, year_counts))
