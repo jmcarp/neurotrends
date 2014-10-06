@@ -131,18 +131,19 @@ def retag(processes=2):
 
 
 @task
-def rescrape(processes=2, months=6, limit=50, overwrite=False):
+def rescrape(processes=1, months=6, limit=50, missing='any', overwrite=False):
     from dateutil.relativedelta import relativedelta
     from modularodm import Q
     from scripts import retag
     cutoff_date = datetime.datetime.utcnow() - relativedelta(months=months)
     query = (
-        (
-            Q('date_last_scraped', 'lt', datetime.datetime.utcnow()) |
-            Q('date_last_scraped', 'eq', None)
-        ) &
-        Q('verified.0', 'exists', False)
+        Q('date_last_scraped', 'lt', cutoff_date) |
+        Q('date_last_scraped', 'eq', None)
     )
+    if missing == 'any':
+        query = query & Q('verified.0', 'exists', False)
+    else:
+        query = query & Q('verified', 'ne', missing)
     retag.batch_rescrape(
         processes=processes,
         query=query,

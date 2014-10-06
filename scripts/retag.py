@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import functools
 import multiprocessing
-from collections import namedtuple
 
 from neurotrends.model import Article
 
@@ -11,38 +11,34 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-RetagCommand = namedtuple('RetagCommand', ['article_id', 'overwrite'])
-RescrapeCommand = namedtuple('RescrapeCommand', ['article_id', 'overwrite'])
-
-
-def retag(command):
-    logger.info('Re-tagging article {0}'.format(command.article_id))
+def retag(article_id, **kwargs):
+    logger.info('Re-tagging article {0}'.format(article_id))
     try:
-        article = Article.load(command.article_id)
-        article.tag(overwrite=command.overwrite)
+        article = Article.load(article_id)
+        article.tag(**kwargs)
     except Exception as error:
-        logger.error('Error tagging article {0}'.format(command.article_id))
+        logger.error('Error tagging article {0}'.format(article_id))
         logger.exception(error)
 
 
-def rescrape(command):
-    logger.info('Re-scraping article {0}'.format(command.article_id))
+def rescrape(article_id, **kwargs):
+    logger.info('Re-scraping article {0}'.format(article_id))
     try:
-        article = Article.load(command.article_id)
-        article.scrape(overwrite=command.overwrite)
+        article = Article.load(article_id)
+        article.scrape(**kwargs)
     except Exception as error:
-        logger.error('Error scraping article {0}'.format(command.article_id))
+        logger.error('Error scraping article {0}'.format(article_id))
         logger.exception(error)
 
 
-def batch_retag(processes, query=None, limit=None, overwrite=True):
+def batch_retag(processes, query=None, limit=None, **kwargs):
     pool = multiprocessing.Pool(processes=processes)
     articles = Article.find(query)
     if limit:
         articles = articles.limit(limit)
     results = pool.map(
-        retag,
-        (RetagCommand(article._id, overwrite) for article in articles),
+        functools.partial(retag, **kwargs),
+        (article._id for article in articles),
     )
 
 
@@ -52,7 +48,7 @@ def batch_rescrape(processes, query=None, limit=None, overwrite=False):
     if limit:
         articles = articles.limit(limit)
     results = pool.map(
-        rescrape,
-        (RescrapeCommand(article._id, overwrite) for article in articles),
+        functools.partial(rescrape, **kwargs),
+        (article._id for article in articles),
     )
 
