@@ -127,7 +127,8 @@ class _Jobs(object):
             config.mongo[collection].map_reduce(
                 mapper,
                 reducer,
-                out={'replace': out.name}
+                out={'replace': out.name},
+                query={'tags': {'$ne': None}},
             )
         self.jobs.append(job)
 
