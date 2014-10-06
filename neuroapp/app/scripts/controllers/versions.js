@@ -19,9 +19,12 @@ angular.module('neuroApp')
 
     // Public variables
 
-    $scope.chart = {};
-    $scope.chart.yAxisTickFormat = function(value) {
-      return Utils.round(value, 3);
+    $scope.chart = {
+      tag: null,
+      series: null,
+      yAxisTickFormat: function(value) {
+        return Utils.round(value, 3);
+      }
     };
 
     // Private functions

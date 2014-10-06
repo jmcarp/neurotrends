@@ -52,15 +52,15 @@ describe('Controller: PlaceTagsCtrl', function () {
     PlaceTagsCtrl.cache = {};
     scope.tags = [{label: 'spm'}, {label: 'fsl'}];
     PlaceTagsCtrl.refreshChart();
-    expect(scope.series).toEqual([]);
+    expect(scope.chart.series).toEqual(null);
   });
 
   it('should refresh series data if cache is not empty', function() {
     PlaceTagsCtrl.cache = mockData;
-    scope.tags = [{label: 'spm'}, {label: 'fsl'}];
-    scope.series = [];
+    scope.chart.tags = [{label: 'spm'}, {label: 'fsl'}];
+    scope.chart.series = [];
     PlaceTagsCtrl.refreshChart();
-    expect(scope.series).toEqual(mockSeries);
+    expect(scope.chart.series).toEqual(mockSeries);
   });
 
 });

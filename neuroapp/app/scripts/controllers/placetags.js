@@ -8,7 +8,7 @@
  * Controller of the neuroappApp
  */
 angular.module('neuroApp')
-  .controller('PlaceTagsCtrl', function ($scope, Tag, Place, _) {
+  .controller('PlaceTagsCtrl', function ($scope, Tag, Place, Utils, _) {
 
     var self = this;
 
@@ -18,8 +18,13 @@ angular.module('neuroApp')
 
     // Public variables
 
-    $scope.series = [];
-    $scope.tags = [];
+    $scope.chart = {
+      tags: null,
+      series: null,
+      yAxisTickFormat: function(value) {
+        return Utils.round(value, 3);
+      }
+    };
 
     $scope.Tag = Tag;
 
@@ -29,7 +34,7 @@ angular.module('neuroApp')
       if (_.isEmpty(self.cache)) {
         return;
       }
-      $scope.series = _.map($scope.tags, function(tag) {
+      $scope.chart.series = _.map($scope.chart.tags, function(tag) {
         var tagSeries = {
           key: tag.label,
           values: _.map(self.cache, function(counts, place) {
@@ -49,7 +54,7 @@ angular.module('neuroApp')
 
     // Listeners
 
-    $scope.$watch('tags', function() {
+    $scope.$watch('chart.tags', function() {
       self.refreshChart();
     }, true);
 

@@ -1,10 +1,10 @@
-<h3 ng-show="!series.length">
+<h3 ng-show="!chart.series.length">
     Add tags to view counts by place
 </h3>
 
 <tags-input
         id="searchTags"
-        ng-model="tags"
+        ng-model="chart.tags"
         min-length="2"
         display-property="label"
         add-from-autocomplete-only="true"
@@ -15,9 +15,10 @@
         ></auto-complete>
 </tags-input>
 
-<div ng-show="series.length">
+<div ng-show="chart.series.length">
     <nvd3-multi-bar-horizontal-chart
-            data="series"
+            data="chart.series"
+            yAxisTickFormat="chart.yAxisTickFormat"
             showXAxis="true"
             showYAxis="true"
             margin="{left: 200}"
