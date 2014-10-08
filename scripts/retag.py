@@ -42,7 +42,7 @@ def batch_retag(processes, query=None, limit=None, **kwargs):
     )
 
 
-def batch_rescrape(processes, query=None, limit=None, overwrite=False):
+def batch_rescrape(processes, query=None, limit=None, **kwargs):
     pool = multiprocessing.Pool(processes=processes)
     articles = Article.find(query)
     if limit:
