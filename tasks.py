@@ -132,6 +132,13 @@ def retag(processes=2):
 
 @task
 def rescrape(processes=1, months=6, limit=50, missing='any', overwrite=False):
+    """
+    :param int processes: Number of processes to launch
+    :param int months: Minimum time since last scraped
+    :param int limit: Max number of articles to scrape
+    :param str missing: Missing document type (html, pdf, pmc, any)
+    :param bool overwrite: Overwrite existing articles
+    """
     from dateutil.relativedelta import relativedelta
     from modularodm import Q
     from scripts import retag
