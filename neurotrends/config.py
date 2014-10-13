@@ -27,7 +27,10 @@ def make_collection_proxy(collection_name):
     return LocalProxy(_get_collection)
 
 
+article_collection = make_collection_proxy('article')
+
 cache_collection = make_collection_proxy('cache')
+dist_collection = make_collection_proxy('distance')
 
 tag_counts_collection = make_collection_proxy('tag_counts')
 year_counts_collection = make_collection_proxy('year_counts')
