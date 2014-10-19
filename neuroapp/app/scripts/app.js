@@ -33,7 +33,8 @@ var app = angular
       })
       .when('/search', {
         templateUrl: 'views/search.html',
-        controller: 'SearchCtrl'
+        controller: 'SearchCtrl',
+        reloadOnSearch: false
       })
       .when('/trends/tags', {
         templateUrl: 'views/tags.html',
@@ -52,6 +53,10 @@ var app = angular
       .when('/trends/places', {
         templateUrl: 'views/place-tags.html',
         controller: 'PlaceTagsCtrl'
+      })
+      .when('/trends/distances', {
+        templateUrl: 'views/tag-distances.html',
+        controller: 'TagDistCtrl'
       })
       .when('/tools/extract', {
         templateUrl: 'views/extract.html',

@@ -2,7 +2,7 @@
 
 /**
  * @ngdoc function
- * @name neuroappApp.controller:PlacetagsCtrl
+ * @name neuroappApp.controller:PlaceTagsCtrl
  * @description
  * # PlaceTagsCtrl
  * Controller of the neuroappApp

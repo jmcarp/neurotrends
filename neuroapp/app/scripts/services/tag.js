@@ -12,6 +12,9 @@ angular.module('neuroApp')
       normalize: true,
       threshold: 0.01,
     };
+    var distanceDefaults = {
+      metric: 'cosine',
+    };
 
     var Tag = function(data) {
       angular.extend(this, data);
@@ -39,6 +42,15 @@ angular.module('neuroApp')
       return $http({
         method: 'get',
         url: baseUrl + label + '/versions/',
+        params: params,
+      });
+    };
+
+    Tag.distances = function(label, options) {
+      var params = angular.extend({}, distanceDefaults, options);
+      return $http({
+        method: 'get',
+        url: baseUrl + label + '/distances/',
         params: params,
       });
     };

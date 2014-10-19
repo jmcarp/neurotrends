@@ -1,0 +1,36 @@
+<input
+        class="form-control"
+        placeholder="Start typing to select a tag"
+        ng-model="chart.selection"
+        typeahead-min-length="2"
+        typeahead="tag for tag in search($viewValue)"
+        typeahead-on-select="selectTag($item)"
+    />
+
+<div ng-show="chart.distances">
+
+    <h2>Distances from tag <em>{{ chart.tag }}</em></h2>
+    <p class="lead">
+        Smaller values indicate greater similarity to <em>{{ chart.tag }}</em>; showing 20 most related tags
+    </p>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Tag</th>
+                <th>Distance</th>
+                <th>Articles</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="distance in chart.distances">
+                <td>{{ distance.label }}</td>
+                <td>{{ distance.value }}</td>
+                <td>
+                    <a href="#/search/?tags={{ chart.tag }}&tags={{ distance.label }}">Search</a>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
