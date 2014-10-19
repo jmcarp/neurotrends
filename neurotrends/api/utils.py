@@ -1,9 +1,9 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 from __future__ import division
 
 import re
-import weakref
 import itertools
 import collections
 
@@ -18,23 +18,7 @@ from neurotrends import tagger
 from neurotrends import pattern
 from neurotrends.pattern.misc import clean
 
-
-class lazyproperty(object):
-    """Cached property method decorator.
-
-    :param method: Method to cache
-    """
-    def __init__(self, method):
-        self.data = weakref.WeakKeyDictionary()
-        self.method = method
-
-    def __get__(self, instance, owner):
-        try:
-            return self.data[instance]
-        except KeyError:
-            value = self.method(instance)
-            self.data[instance] = value
-            return value
+from scripts import distance
 
 
 text_bool_map = {
@@ -95,13 +79,11 @@ class QueryTranslator(object):
 
         :param field: Label of field in input mapping
         :param translator: Callable that takes a value and returns a `Query` object
-
         """
         self.translators[field] = translator
 
     def translate(self, kwargs):
         """Translate input data into a ModularODM `Query`.
-
         """
         reducer = lambda x, y: x & y
         filterer = lambda x: x is not None
@@ -448,6 +430,21 @@ def get_tag_place_counts(place, normalize):
     )
 
 
+def get_tag_distances(tag_id, metric, reverse=False):
+    """
+    :raise: `NotFound` if distance metric or tag not found
+    """
+    record = config.dist_collection.find_one({'_id': metric})
+    if record is None:
+        raise exceptions.NotFound()
+    dist_set = distance.DistSet.from_json(record)
+    try:
+        vector = dist_set.get_vector(tag_id)
+    except ValueError:
+        raise exceptions.NotFound()
+    return collections.OrderedDict(sorted(vector.items(), reverse=reverse))
+
+
 def extract_tags(text):
     text_clean = clean(text)
     return sum(
@@ -457,4 +454,3 @@ def extract_tags(text):
         ],
         []
     )
-

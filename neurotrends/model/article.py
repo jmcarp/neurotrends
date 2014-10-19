@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 import os
 import logging
@@ -103,7 +104,6 @@ class Article(StoredObject):
         information for unambiguous resolution.
 
         :param bool save: Save record if DOI is found
-
         """
         # Check required fields
         try:
@@ -146,7 +146,6 @@ class Article(StoredObject):
         :param dict record: PubMed record from pubtools
         :param str doi: Optional DOI
         :return: Created article
-
         """
         article = Article()
 
@@ -205,7 +204,6 @@ class Article(StoredObject):
 
         :param str document_type: Document type (html, pdf, pmc)
         :return str: Path to file
-
         """
         return os.path.join(
             SAVE_DIRS[document_type],
@@ -220,7 +218,6 @@ class Article(StoredObject):
 
         :param str document_type: Document type (html, pdf, pmc)
         :param bool save: Save record after update
-
         """
         filepath = self._get_filepath(document_type)
         if not os.path.exists(filepath):
@@ -243,7 +240,6 @@ class Article(StoredObject):
         """Remove document field and any existing stored files.
 
         :param str document_type: Document type (html, pdf, pmc)
-
         """
         document_attr = DOCUMENT_MAP[document_type]['field']
         document = getattr(self, document_attr)
@@ -270,7 +266,6 @@ class Article(StoredObject):
         :param list document_types: Document types to scrape; may include
             'pmc', 'html', and 'pdf'
         :param bool overwrite: Overwrite existing files
-
         """
         # Get default arguments
         scraper = scraper or SCRAPE_CLASS(**SCRAPE_KWARGS)
@@ -334,7 +329,6 @@ class Article(StoredObject):
         :param float threshold: Verification threshold
         :param bool overwrite: Overwrite existing verification info
         :param bool save: Save record after update
-
         """
         self.verified = [
             name
@@ -352,7 +346,6 @@ class Article(StoredObject):
         :param bool overwrite: Overwrite existing tags
         :param bool save: Save record after update
         :return list: New or modified extracted tags
-
         """
         tag_groups = tag_groups or pattern.tag_groups.values()
 
@@ -434,7 +427,6 @@ class Article(StoredObject):
 
         :param list labels: Labels of tags to delete
         :param bool save: Save record after update
-
         """
         self.tags = [
             tag
@@ -446,7 +438,6 @@ class Article(StoredObject):
 
 
 lrecord_fields = ['TI', 'JT', 'FAU']
-
 @Article.subscribe('before_save')
 def update_lrecord(schema, instance):
     lrecord = {
@@ -455,10 +446,9 @@ def update_lrecord(schema, instance):
         if key in instance.record
     }
     instance._lrecord = util.apply_recursive(
-        util.string_lower,
+        lambda value: value.lower() if hasattr(value, 'lower') else value,
         lrecord,
     )
 
 
 Article.set_storage(storage.MongoStorage(mongo, 'article'))
-

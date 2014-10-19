@@ -31,14 +31,20 @@ def mongoclient():
 
 @task
 def count_tags():
-    cmd = 'python -m scripts.count_tags'
-    run(cmd)
+    from scripts import count_tags
+    count_tags.cache_counts()
 
 
 @task
 def get_stats():
-    cmd = 'python -m scripts.get_stats'
-    run(cmd)
+    from scripts import stats
+    stats.cache_stats()
+
+
+@task
+def get_distances():
+    from neurotrends.analysis import distance
+    distance.cache_distances()
 
 
 @task

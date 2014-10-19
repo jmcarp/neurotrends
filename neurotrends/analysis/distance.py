@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 import scipy.spatial
 
+from neurotrends import util
 from neurotrends import config
-from neurotrends.api import utils
 
 
 DIST_FUNCS = [
@@ -74,20 +74,9 @@ class DistSet(object):
         self.tags = tags
         self.dists = dists
 
-    def to_json(self):
-        return {
-            '_id': self.metric,
-            'tags': self.tags,
-            'distances': [
-                {
-                    'keys': keys,
-                    'value': value,
-                }
-                for keys, value in self.dists.iteritems()
-            ],
-        }
-
     def get_vector(self, tag):
+        if tag not in self.tags:
+            raise ValueError('Tag {0} not found in distance matrix'.format(tag))
         vector = {}
         for each in self.tags:
             if each == tag:
@@ -108,6 +97,19 @@ class DistSet(object):
             frame[pair[1]][pair[0]] = dist
         return frame
 
+    def to_json(self):
+        return {
+            '_id': self.metric,
+            'tags': self.tags,
+            'distances': [
+                {
+                    'keys': keys,
+                    'value': value,
+                }
+                for keys, value in self.dists.iteritems()
+            ],
+        }
+
     @classmethod
     def from_json(cls, data):
         return cls(
@@ -124,12 +126,11 @@ class DistMaker(object):
     """Encapsulate calculation of pairwise distances between tags as a function
     of co-occurrence in articles.
     """
-
-    @utils.lazyproperty
+    @util.lazyproperty
     def tags(self):
         return get_unique_tags()
 
-    @utils.lazyproperty
+    @util.lazyproperty
     def article_tags(self):
         return [
             [each['label'] for each in record['tags']]
@@ -139,7 +140,7 @@ class DistMaker(object):
             )
         ]
 
-    @utils.lazyproperty
+    @util.lazyproperty
     def article_tags_bool(self):
         return {
             tag: [int(tag in tags) for tags in self.article_tags]
@@ -158,8 +159,12 @@ class DistMaker(object):
         return DistSet(dist_func.__name__, self.tags, dists)
 
 
-def cache_distances():
+def cache_distances(dist_funcs=None):
+    """Compute pairwise distances between tags according to the metrics in
+    `dist_funcs` and cache results in database.
+    """
     differ = DistMaker()
+    dist_funcs = dist_funcs or DIST_FUNCS
     for dist_func in DIST_FUNCS:
         dist_set = differ.get_distances(dist_func)
         data = dist_set.to_json()
@@ -168,8 +173,3 @@ def cache_distances():
             data,
             upsert=True,
         )
-
-
-if __name__ == '__main__':
-    cache_distances()
-

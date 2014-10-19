@@ -9,7 +9,7 @@ import furl
 from flask import request, url_for
 from marshmallow import Serializer, fields
 
-from . import utils
+from neurotrends import util
 
 
 def goto_page(url, page_num, page_key='page_num'):
@@ -66,11 +66,11 @@ class Paginator(object):
             return page_num
         return None
 
-    @utils.lazyproperty
+    @util.lazyproperty
     def count(self):
         return self.query.offset(0).limit(0).count()
 
-    @utils.lazyproperty
+    @util.lazyproperty
     def total_pages(self):
         return int(math.ceil(self.count / self.page_size))
 

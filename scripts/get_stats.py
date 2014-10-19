@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 import pymongo
 
@@ -10,9 +11,6 @@ articles = mongo['article']
 
 
 def get_stats():
-    """
-
-    """
     num_articles = articles.count()
 
     article_dates = articles.find({'date': {'$ne': None}}, {'date': True})
@@ -36,7 +34,7 @@ def get_stats():
     }
 
 
-if __name__ == '__main__':
+def cache_stats():
     stats = get_stats()
     stats['_id'] = 'stats'
     stats_collection.update(
@@ -44,4 +42,3 @@ if __name__ == '__main__':
         stats,
         upsert=True,
     )
-
