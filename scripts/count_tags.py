@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 from bson import Code
 
@@ -117,39 +118,28 @@ count_reducer = Code('''function(key, values) {
 }''')
 
 
-class _Jobs(object):
-
-    def __init__(self):
-        self.jobs = []
-
-    def register(self, out, mapper, reducer=count_reducer, collection='article'):
-        def job():
-            config.mongo[collection].map_reduce(
-                mapper,
-                reducer,
-                out={'replace': out.name},
-                query={'tags': {'$ne': None}},
-            )
-        self.jobs.append(job)
-
-    def run(self):
-        for job in self.jobs:
-            job()
+def map_count_tags(mapper, output):
+    config.article_collection.map_reduce(
+        mapper,
+        count_reducer,
+        out={'replace': output.name},
+        query={'tags': {'$ne': None}},
+    )
 
 
-Jobs = _Jobs()
+count_jobs = [
+    (tag_mapper, config.tag_counts_collection),
+    (year_mapper, config.year_counts_collection),
+    (place_mapper, config.place_counts_collection),
+    (version_mapper, config.version_counts_collection),
+    (tag_year_mapper, config.tag_year_counts_collection),
+    (tag_place_mapper, config.tag_place_counts_collection),
+    (tag_author_mapper, config.tag_author_counts_collection),
+    (version_year_mapper, config.version_year_counts_collection),
+]
 
 
-Jobs.register(config.tag_counts_collection, tag_mapper)
-Jobs.register(config.year_counts_collection, year_mapper)
-Jobs.register(config.place_counts_collection, place_mapper)
-Jobs.register(config.version_counts_collection, version_mapper)
-Jobs.register(config.tag_year_counts_collection, tag_year_mapper)
-Jobs.register(config.tag_place_counts_collection, tag_place_mapper)
-Jobs.register(config.tag_author_counts_collection, tag_author_mapper)
-Jobs.register(config.version_year_counts_collection, version_year_mapper)
 
-
-if __name__ == '__main__':
-    Jobs.run()
-
+def cache_counts():
+    for job in count_jobs:
+        map_count_tags(*job)
