@@ -7,6 +7,11 @@ from tests.fixtures import test_app, scratch_models
 
 from neurotrends import model
 
+def test_articles_returns_200_response(test_app, scratch_models):
+    for _ in range(3):
+        model.Article().save()
+    resp = test_app.get('/articles/')
+    assert resp.status_code == 200
 
 def test_article(test_app, scratch_models):
     article = model.Article()
