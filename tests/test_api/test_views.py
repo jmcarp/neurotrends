@@ -7,6 +7,11 @@ from tests.fixtures import test_app, scratch_models
 
 from neurotrends import model
 
+def test_articles_returns_200_response(test_app, scratch_models):
+    for _ in range(3):
+        model.Article().save()
+    resp = test_app.get('/articles/')
+    assert resp.status_code == 200
 
 def test_article(test_app, scratch_models):
     article = model.Article()
@@ -26,6 +31,11 @@ def test_author(test_app, scratch_models):
     resp = test_app.get('/authors/{0}/'.format(author._id))
     assert resp.json['_id'] == author._id
 
+def test_authors_returns_200_response(test_app, scratch_models):
+    for _ in range(3):
+        model.Author().save()
+    resp = test_app.get('/authors/')
+    assert resp.status_code == 200
 
 def test_author_not_found(test_app, scratch_models):
     resp = test_app.get('/authors/missing/', expect_errors=True)

@@ -20,7 +20,7 @@ seaborn==0.4.0
 Flask==0.10.1
 Flask-Cors==1.9.0
 Werkzeug==0.9.6
-marshmallow==0.7.0
+marshmallow==1.0.0-a
 webargs==0.7.0
 
 # Dev tools

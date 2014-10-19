@@ -62,9 +62,9 @@ def test_get_record_by_id(scratch_models):
     serialized = utils.get_record_by_id(
         article._id,
         model.Article,
-        serializers.ArticleSerializer,
+        serializers.ArticleSchema,
     )
-    expected = serializers.ArticleSerializer(article).data
+    expected = serializers.ArticleSchema().dump(article).data
     assert serialized == expected
 
 
@@ -73,7 +73,7 @@ def test_get_record_by_id_not_found(scratch_models):
         utils.get_record_by_id(
             None,
             model.Article,
-            serializers.ArticleSerializer
+            serializers.ArticleSchema
         )
 
 

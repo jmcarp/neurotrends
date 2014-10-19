@@ -44,8 +44,8 @@ def get_record_by_id(record_id, record_model, record_serializer):
     record = record_model.load(record_id)
     if record is None:
         raise exceptions.NotFound()
-    serialized = record_serializer(record)
-    return serialized.data
+    result = record_serializer().dump(record)
+    return result.data
 
 
 class QueryFieldTranslator(object):

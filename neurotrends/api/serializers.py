@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 from __future__ import division
 
@@ -7,7 +8,7 @@ import collections
 
 import furl
 from flask import request, url_for
-from marshmallow import Serializer, fields
+from marshmallow import Schema, fields, MarshalResult
 
 from neurotrends import util
 
@@ -75,10 +76,10 @@ class Paginator(object):
         return int(math.ceil(self.count / self.page_size))
 
 
-class PaginatedQuerySerializer(Serializer):
+class PaginatedQuerySchema(Schema):
 
-    def __init__(self, page, *args, **kwargs):
-        super(PaginatedQuerySerializer, self).__init__(
+    def __init__(self, page=None, *args, **kwargs):
+        super(PaginatedQuerySchema, self).__init__(
             page.contents if page else None, *args, **kwargs
         )
         self.page = page
@@ -97,21 +98,23 @@ class PaginatedQuerySerializer(Serializer):
             return None
         return goto_page(request.url, next_page_num)
 
-    @property
-    def data(self):
-        super_data = super(PaginatedQuerySerializer, self).data
-        return collections.OrderedDict([
+    def dump(self, page, *args, **kwargs):
+        self.page = page
+        super_data, errors = super(PaginatedQuerySchema, self).dump(
+            page.contents if page else None
+        )
+        data = collections.OrderedDict([
             ('prev', self.prev),
             ('next', self.next),
             ('pages', self.page.paginator.total_pages),
             ('count', self.page.paginator.count),
             ('results', super_data),
         ])
-
+        return MarshalResult(data, errors)
 
 # Base serializers
 
-class TagSerializer(Serializer):
+class TagSchema(Schema):
     class Meta:
         fields = ('label', 'category', 'group', 'context', 'value', 'version')
     value = fields.Function(lambda obj: obj.get('value'))
@@ -122,7 +125,7 @@ def serialize_author_url(obj):
     return url_for('author', author_id=obj._id, _external=True)
 
 
-class AuthorSerializer(Serializer):
+class AuthorSchema(Schema):
     class Meta:
         fields = ('_id', 'url', 'full', 'last', 'first', 'middle', 'suffix')
     full = fields.String(attribute='_full')
@@ -137,21 +140,31 @@ def serialize_article_url(obj):
     return url_for('article', article_id=obj._id, _external=True)
 
 
-class ArticleSerializer(Serializer):
+class ArticleSchema(Schema):
     class Meta:
         fields = ('_id', 'url', 'record', 'date', 'pmid', 'doi', 'authors', 'tags')
-    authors = fields.Nested(AuthorSerializer, many=True)
-    tags = fields.Nested('TagSerializer', many=True)
+    authors = fields.Nested(AuthorSchema, many=True)
+    tags = fields.Nested(TagSchema, many=True)
     date = fields.Function(serialize_article_date)
     url = fields.Function(serialize_article_url)
 
 
 # Paginated serializers
 
-class AuthorQuerySerializer(AuthorSerializer, PaginatedQuerySerializer):
+class AuthorQuerySchema(AuthorSchema, PaginatedQuerySchema):
     pass
 
 
-class ArticleQuerySerializer(ArticleSerializer, PaginatedQuerySerializer):
+class ArticleQuerySchema(ArticleSchema, PaginatedQuerySchema):
     pass
 
+
+# Singleton "default" schemas
+tag_schema = TagSchema()
+tags_schema = TagSchema(many=True)
+
+author_schema = AuthorSchema()
+authors_schema = AuthorSchema(many=True)
+
+author_query_schema = AuthorQuerySchema(many=True)
+article_query_schema = ArticleQuerySchema(many=True)
