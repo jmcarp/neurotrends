@@ -8,11 +8,16 @@
  * Controller of the neuroApp
  */
 angular.module('neuroApp')
-  .controller('SearchCtrl', function ($scope, Article, Tag, _) {
+  .controller('SearchCtrl', function ($scope, $location, Article, Tag, Utils, _) {
 
     var self = this;
 
-    $scope.params = {};
+    $scope.params = {
+      title: null,
+      journal: null,
+      pmid: null,
+      doi: null,
+    };
     $scope.authors = [];
     $scope.tags = [];
 
@@ -69,21 +74,45 @@ angular.module('neuroApp')
           ret[key] = value;
         }
       });
-      ret.authors = $scope.authors.length ?
-          _.pluck($scope.authors, 'label') :
-          undefined;
-      ret.tags = $scope.tags.length ?
-          _.pluck($scope.tags, 'label') :
-          undefined;
+      if ($scope.authors.length) {
+        ret.authors = _.pluck($scope.authors, 'label');
+      }
+      if ($scope.tags.length) {
+        ret.tags = _.pluck($scope.tags, 'label');
+      }
       ret.page_num = $scope.paging.currentPage;  // jshint ignore:line
       ret.page_size = $scope.paging.pageSize;    // jshint ignore:line
       return ret;
+    };
+
+    self.unserializeList = function(value, key) {
+      var obj;
+      value = Utils.ensureArray(value);
+      key = key || 'label';
+      return _.map(value, function(item) {
+        obj = {};
+        obj[key] = item;
+        return obj;
+      });
+    };
+
+    self.unserialize = function(payload) {
+      _.each($scope.params, function(value, key) {
+        $scope.params[key] = payload[key];
+      });
+      if (payload.authors) {
+        $scope.authors = self.unserializeList(payload.authors);
+      }
+      if (payload.tags) {
+        $scope.tags = self.unserializeList(payload.tags);
+      }
     };
 
     self.fetchArticles = function() {
       $scope.status.loading = true;
       $scope.results.articles = [];
       var params = self.serialize();
+      $location.search(params);
       Article.query(params).then(
         self.handleSuccess,
         self.handleError
@@ -99,5 +128,14 @@ angular.module('neuroApp')
       self.fetchArticles();
     };
 
-  });
+    // Initialization
 
+    $scope.$on('$viewContentLoaded', function() {
+      var search = $location.search();
+      if (!_.isEmpty(search)) {
+        self.unserialize(search);
+        $scope.submit($scope.searchForm);
+      }
+    });
+
+  });

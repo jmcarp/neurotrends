@@ -7,6 +7,13 @@ angular.module('neuroApp')
       return +value.toFixed(places);
     };
 
+    var ensureArray = function(value) {
+      if (angular.isArray(value)) {
+        return value;
+      }
+      return [value];
+    };
+
     // From https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
     function escapeRegex(string){
       return string.replace(/([.*+?^${}()|\[\]\/\\])/g, '\\$1');
@@ -21,8 +28,8 @@ angular.module('neuroApp')
 
     return {
       round: round,
-      highlightText: highlightText
+      ensureArray: ensureArray,
+      highlightText: highlightText,
     };
 
   });
-

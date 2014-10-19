@@ -75,7 +75,7 @@ angular.module('neuroApp')
       if (!labels || labels === true) {
         return [];
       }
-      return angular.isArray(labels) ? labels : [labels];
+      return Utils.ensureArray(labels);
     };
 
     var setParamsFromTags = function() {
@@ -114,4 +114,3 @@ angular.module('neuroApp')
     getTagsFromParams();
 
   });
-
