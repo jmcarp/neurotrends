@@ -21,7 +21,7 @@ Flask==0.10.1
 Flask-Cors==1.9.0
 Werkzeug==0.9.6
 marshmallow==0.7.0
-webargs==0.6.1
+webargs==0.7.0
 
 # Dev tools
 factory-boy==2.4.1
