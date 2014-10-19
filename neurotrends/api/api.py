@@ -214,7 +214,7 @@ def articles():
     page_args = parser.parse(article_page_args, request)
     paginator = serializers.Paginator(query, page_args['page_size'])
     page = paginator.get_page(page_args['page_num'])
-    serialized = serializers.ArticleQuerySchema(page, many=True)
+    serialized = serializers.article_query_schema(page, many=True)
     return serialized.data
 
 

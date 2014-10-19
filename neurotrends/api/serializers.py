@@ -168,3 +168,13 @@ class AuthorQuerySchema(AuthorSchema, PaginatedQuerySchema):
 class ArticleQuerySchema(ArticleSchema, PaginatedQuerySchema):
     pass
 
+
+# Singleton "default" schemas
+tag_schema = TagSchema()
+tags_schema = TagSchema(many=True)
+
+author_schema = AuthorSchema()
+authors_schema = AuthorSchema(many=True)
+
+author_query_schema = AuthorQuerySchema(many=True)
+article_query_schema = ArticleQuerySchema(many=True)
