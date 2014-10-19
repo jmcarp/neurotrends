@@ -200,7 +200,7 @@ def article(article_id):
     return utils.get_record_by_id(
         article_id,
         model.Article,
-        serializers.ArticleSerializer,
+        serializers.ArticleSchema,
     )
 
 
@@ -214,7 +214,7 @@ def articles():
     page_args = parser.parse(article_page_args, request)
     paginator = serializers.Paginator(query, page_args['page_size'])
     page = paginator.get_page(page_args['page_num'])
-    serialized = serializers.ArticleQuerySerializer(page, many=True)
+    serialized = serializers.ArticleQuerySchema(page, many=True)
     return serialized.data
 
 
@@ -223,7 +223,7 @@ def author(author_id):
     return utils.get_record_by_id(
         author_id,
         model.Author,
-        serializers.AuthorSerializer,
+        serializers.AuthorSchema,
     )
 
 
@@ -249,8 +249,9 @@ def authors():
     page_args = parser.parse(author_page_args, request)
     paginator = serializers.Paginator(query, page_args['page_size'])
     page = paginator.get_page(page_args['page_num'])
-    serialized = serializers.AuthorQuerySerializer(page, many=True)
-    return serialized.data
+    query_schema = serializers.AuthorQuerySchema(many=True)
+    result = query_schema.dump(page)
+    return result.data
 
 
 @app.route('/stats/', methods=['GET'])
