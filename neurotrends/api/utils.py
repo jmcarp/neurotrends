@@ -442,7 +442,13 @@ def get_tag_distances(tag_id, metric, reverse=False):
         vector = dist_set.get_vector(tag_id)
     except ValueError:
         raise exceptions.NotFound()
-    return collections.OrderedDict(sorted(vector.items(), reverse=reverse))
+    return collections.OrderedDict(
+        sorted(
+            vector.items(),
+            key=lambda item: item[1],
+            reverse=reverse,
+        ),
+    )
 
 
 def extract_tags(text):

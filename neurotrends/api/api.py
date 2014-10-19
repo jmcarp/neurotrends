@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 import os
 import functools
@@ -161,6 +162,23 @@ tag_count_args = {
     'normalize': utils.make_bool_arg(default=False),
 }
 
+order_reverse_map = {
+    'asc': False,
+    'desc': True,
+}
+
+tag_distance_args = {
+    'metric': Arg(str, default='cosine'),
+    'reverse': Arg(
+        bool,
+        use=lambda value: order_reverse_map.get(value),
+        validate=lambda value: value is not None,
+        source='order',
+        default=False,
+    ),
+}
+
+
 version_count_args = {
     'normalize': utils.make_bool_arg(default=False),
     'threshold': Arg(float, default=0.0),
@@ -295,6 +313,20 @@ def tag_version_counts(tag_id):
     return collections.OrderedDict([
         ('label', tag_id),
         ('counts', counts),
+    ])
+
+
+@app.route('/tags/<tag_id>/distances/', methods=['GET'])
+def get_tag_distances(tag_id):
+    """Get distances between `tag_id` and all other tags using the requested
+    distance metric.
+    """
+    tag_id = tag_id.strip().lower()
+    args = parser.parse(tag_distance_args, request)
+    distances = utils.get_tag_distances(tag_id, **args)
+    return collections.OrderedDict([
+        ('tag', tag_id),
+        ('distances', distances),
     ])
 
 
