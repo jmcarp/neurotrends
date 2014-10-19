@@ -249,8 +249,7 @@ def authors():
     page_args = parser.parse(author_page_args, request)
     paginator = serializers.Paginator(query, page_args['page_size'])
     page = paginator.get_page(page_args['page_num'])
-    query_schema = serializers.AuthorQuerySchema(many=True)
-    result = query_schema.dump(page)
+    result = serializers.author_query_schema.dump(page)
     return result.data
 
 
