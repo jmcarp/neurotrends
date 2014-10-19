@@ -32,4 +32,3 @@ piprot==0.8.2
 pytest==2.6.3
 webtest-plus==0.3.1
 Faker==0.0.4
-
