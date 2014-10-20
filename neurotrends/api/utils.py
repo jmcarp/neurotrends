@@ -16,9 +16,8 @@ import pymongo
 from neurotrends import config
 from neurotrends import tagger
 from neurotrends import pattern
+from neurotrends.analysis import distance
 from neurotrends.pattern.misc import clean
-
-from scripts import distance
 
 
 text_bool_map = {

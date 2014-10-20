@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 import os
 import datetime
@@ -12,6 +13,11 @@ MONGO_CACHE_PATH = 'fixtures/mongo/cache'
 
 
 # TODO: Add port, database name to MongoDB tasks
+
+@task
+def clear_pyc():
+    run('find . | grep "\.pyc$" | xargs rm')
+
 
 @task
 def mongoserver(db_path=DB_PATH, fork=False, log_path=LOG_PATH):
@@ -84,6 +90,7 @@ def restore_cache():
 
 @task
 def test(path='tests'):
+    clear_pyc()
     cmd = 'py.test'
     if path:
         cmd += ' ' + path
@@ -173,5 +180,6 @@ def update_dates(overwrite=False):
 
 @task
 def serve_api():
-    run('python api.py')
-
+    clear_pyc()
+    from api import app
+    app.run()
