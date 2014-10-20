@@ -43,8 +43,8 @@ def count_tags():
 
 @task
 def get_stats():
-    from scripts import stats
-    stats.cache_stats()
+    from scripts import get_stats
+    get_stats.cache_stats()
 
 
 @task
