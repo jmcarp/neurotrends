@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 import random
 import logging
@@ -22,7 +23,6 @@ def add_missing(query, max_count, randomize=False):
     :param int max_count: Maximum number of articles to process
     :param bool randomize: Randomize list of articles to fetch
     :return: Added article objects
-
     """
     pmids = pubtools.search_pmids(query)
     stored_pmids = [
@@ -49,6 +49,7 @@ def add_missing(query, max_count, randomize=False):
         logger.debug('Adding article {}'.format(pmid))
         article = Article.from_record(record)
         article.scrape(scraper)
+        article.tag()
         added.append(article)
 
     return added
@@ -58,7 +59,6 @@ def remove_duplicates(by='pmid'):
     """Remove duplicate articles by field.
 
     :param str by: Article field to identify duplicates
-
     """
     counts = collections.defaultdict(int)
     values = [
@@ -79,4 +79,3 @@ def remove_duplicates(by='pmid'):
                 )
             )
             Article.remove_one(duplicate)
-

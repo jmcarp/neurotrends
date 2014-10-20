@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# encoding: utf-8
 
 import logging
 import functools
@@ -51,4 +52,3 @@ def batch_rescrape(processes, query=None, limit=None, **kwargs):
         functools.partial(rescrape, **kwargs),
         (article._id for article in articles),
     )
-

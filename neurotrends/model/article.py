@@ -99,6 +99,9 @@ class Article(StoredObject):
     date_last_scraped = fields.DateTimeField(index=True)
     date_last_tagged = fields.DateTimeField(index=True)
 
+    def __repr__(self):
+        return '<Article: PMID={0}, DOI={1}>'.format(self.pmid, self.doi)
+
     def _get_doi_openurl(self, save=True):
         """Look up DOI using CrossRef's OpenURL service. Pass enough
         information for unambiguous resolution.
