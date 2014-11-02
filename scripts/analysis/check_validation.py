@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import numpy as np
+import pandas as pd
 
 from neurotrends import validate as val
 from neurotrends.analysis.plot.utils import file_name
@@ -19,6 +20,16 @@ def to_hist(result, groups=None):
     return dprimes, groups
 
 
+def to_frame(result):
+    data = []
+    for _, tags in result.iteritems():
+        data.extend([
+            {'tag': tag, 'dprime': info['dprime']}
+            for tag, info in tags.iteritems()
+        ])
+    return pd.DataFrame(data).sort('dprime')
+
+
 print('{0} articles included in both sets'.format(
     len(val.pmids)
 ))
@@ -31,24 +42,26 @@ print('{0} articles included in both sets, excluding supplements'.format(
 
 validation = val.validate()
 dprimes, groups = to_hist(validation)
+frame = to_frame(validation)
 val.validate_hist(
-    dprimes, bins=10, labels=groups, title='Supplements included', xlabel='D-Prime',
+    dprimes, bins=5, labels=groups, title='Supplements included', xlabel='D-Prime',
     outname=file_name(['dprime-supplements'], path='validate')
 )
+frame.to_csv(file_name(['dprime-supplements'], path='validate'), ext='.csv')
 print('Categorical Validation: Supplements Included')
 print(np.mean(sum(dprimes, [])))
 
 
 validation = val.validate(no_supplement=True)
 dprimes, groups = to_hist(validation)
-import pdb; pdb.set_trace()
+frame = to_frame(validation)
 val.validate_hist(
-    dprimes, bins=10, labels=groups, title='Supplements excluded', xlabel='D-Prime',
+    dprimes, bins=5, labels=groups, title='Supplements excluded', xlabel='D-Prime',
     outname=file_name(['dprime-no-supplements'], path='validate')
 )
+frame.to_csv(file_name(['dprime-no-supplements'], path='validate', ext='.csv'))
 print('Categorical Validation: Supplements Excluded')
 print(np.mean(sum(dprimes, [])))
-
 
 # Validate continuous values
 

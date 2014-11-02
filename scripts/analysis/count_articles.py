@@ -1,5 +1,6 @@
-"""
-Get basic statistics about the number of documents downloaded and verified
+#!/usr/bin/env python
+# encoding: utf-8
+"""Get basic statistics about the number of documents downloaded and verified
 by document type.
 """
 
@@ -11,29 +12,30 @@ from neurotrends.config import mongo
 
 from neurotrends.model import Article
 from neurotrends.model.utils import verified_mongo
-from neurotrends.model.config import DOCUMENT_TYPES_TO_FIELDS
+from neurotrends.model.config import DOCUMENT_TYPES_TO_FIELDS, VERIFY_THRESHOLD
 
 
-def count_verified():
+def count_verified(threshold=VERIFY_THRESHOLD):
     """Count the number of downloaded and verified documents across all
     articles.
 
+    :param float threshold: Document verification threshold
     :return: Tuple of total and verified dictionaries, each mapping document
     types to counts
-
     """
     count = defaultdict(int)
     verified = defaultdict(int)
 
     for article in Article.find():
-        for type, field in DOCUMENT_TYPES_TO_FIELDS.iteritems():
+        for type_, field in DOCUMENT_TYPES_TO_FIELDS.iteritems():
             value = getattr(article, field)
             if value:
-                count[type] += 1
-                if value.verification_score > 0.9:
-                    verified[type] += 1
+                count[type_] += 1
+                if value.verification_score > threshold:
+                    verified[type_] += 1
 
     return count, verified
+
 
 if __name__ == '__main__':
 

@@ -1,6 +1,5 @@
-"""
-
-"""
+#!/usr/bin/env python
+# encoding: utf-8
 
 from __future__ import division
 
@@ -17,6 +16,7 @@ from neurotrends.model.utils import verified_mongo
 import sys
 sys.path.append('/Users/jmcarp/Dropbox/projects/fmri-report/scripts')
 import reportproc as rp
+
 
 report = rp.ezread()
 
@@ -40,6 +40,17 @@ nt_pmids = [
 
 pmids = set(rp_pmids).intersection(nt_pmids)
 pmids_no_supplement = set(rp_pmids_no_supplement).intersection(nt_pmids)
+
+
+def nonzero(value, precision=0.001):
+    return max(
+        precision,
+        min(
+            1 - precision,
+            value
+        )
+    )
+
 
 class Validator(object):
 
@@ -73,16 +84,6 @@ class Validator(object):
                 and re.search(self.rp_value, article[self.rp_column])
         ]
 
-    @staticmethod
-    def _nonzero(value, precision=0.001):
-        return max(
-            precision,
-            min(
-                1 - precision,
-                value
-            )
-        )
-
     def validate(self, no_supplement=False):
 
         _pmids = pmids_no_supplement if no_supplement else pmids
@@ -105,15 +106,15 @@ class Validator(object):
 
         else:
 
-            phit, pfal = [self._nonzero(0)] * 2
+            phit, pfal = [nonzero(0)] * 2
 
             if true_pos:
-                phit = self._nonzero(
+                phit = nonzero(
                     len(true_pos) / (len(true_pos) + len(false_neg))
                 )
 
             if len(false_pos):
-                pfal = self._nonzero(
+                pfal = nonzero(
                     len(false_pos) / (len(true_neg) + len(false_pos))
                 )
 
@@ -248,10 +249,12 @@ def rp_extract_highpass_cutoff(item):
         except ValueError:
             return
 
+
 def nt_extract_highpass_cutoff(item):
     for tag in item['tags']:
         if tag['label'] == 'highpass_cutoff':
             return tag['value']
+
 
 def validate_continuous(rp_extract, nt_extract):
 
@@ -277,6 +280,7 @@ def validate_continuous(rp_extract, nt_extract):
 
     return valid_pmids, rp_values, nt_values
 
+
 def format_continuous_validation(rp_values, nt_values):
     rval, pval = pearsonr(rp_values, nt_values)
     return 'r({df}) = {rval:.04f}; p = {pval:.04f}'.format(
@@ -284,6 +288,7 @@ def format_continuous_validation(rp_values, nt_values):
         rval=rval,
         pval=pval,
     )
+
 
 def validate_hist(values, bins=5, labels=None, title=None, xlabel=None, outname=None):
 
